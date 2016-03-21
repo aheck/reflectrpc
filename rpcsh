@@ -6,7 +6,7 @@ import json
 
 from cmd import Cmd
 
-from reflectrpc import ReflectRpcClient
+from reflectrpc import RpcClient
 import reflectrpc
 
 def print_functions(functions):
@@ -80,7 +80,7 @@ class ReflectRpcShell(Cmd):
     def __init__(self, host, port):
         super().__init__()
 
-        self.client = ReflectRpcClient(host, port)
+        self.client = RpcClient(host, port)
         self.functions = self.client.rpc_call('__describe_functions')
         self.prompt = '(rpc) '
         self.intro = "ReflectRpc Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (host, port)
@@ -125,7 +125,7 @@ class ReflectRpcShell(Cmd):
         method = tokens.pop(0)
         try:
             print("Server replied:", self.client.rpc_call(method, *tokens))
-        except reflectrpc.ReflectRpcError as e:
+        except reflectrpc.RpcError as e:
             print("Error:", e)
 
     def do_raw(self, line):

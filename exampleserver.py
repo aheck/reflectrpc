@@ -12,7 +12,7 @@ def echo(message):
 def add(a, b):
     return int(a) + int(b)
 
-jsonrpc = reflectrpc.ReflectRpcProcessor()
+jsonrpc = reflectrpc.RpcProcessor()
 
 echo_func = reflectrpc.RpcFunction(echo, 'echo', 'Returns the message it was sent',
         'string', 'The message previously received')

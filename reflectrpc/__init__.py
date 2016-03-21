@@ -42,7 +42,7 @@ class RpcFunction:
 
         return d
 
-class ReflectRpcProcessor:
+class RpcProcessor:
     """
     A JSON-RPC server that is capable of describing all its RPC functions to the client
     """
@@ -125,14 +125,14 @@ class ReflectRpcProcessor:
         def call_function(self, name, func, func_desc):
             """Executes the actual function. Can be overridden for concurrent execution e.g."""
 
-class ReflectRpcError(Exception):
+class RpcError(Exception):
     def __init__(self, msg):
         self.msg = msg
 
     def __str__(self):
         return "ERROR: " + str(msg)
 
-class ReflectRpcClient:
+class RpcClient:
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -177,6 +177,6 @@ class ReflectRpcClient:
         reply = json.loads(json_reply)
 
         if 'error' in reply and reply['error']:
-            raise ReflectRpcError(reply['error'])
+            raise RpcError(reply['error'])
 
         return reply['result']
