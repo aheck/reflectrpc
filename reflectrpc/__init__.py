@@ -180,28 +180,3 @@ class ReflectRpcClient:
             raise ReflectRpcError(reply['error'])
 
         return reply['result']
-
-def echo(message):
-    return message
-
-def add(a, b):
-    return int(a) + int(b)
-
-if __name__=="__main__":
-    jsonrpc = ReflectRpcProcessor()
-
-    echo_func = RpcFunction(echo, 'echo', 'Returns the message it was sent',
-            'string', 'The message previously received')
-    echo_func.add_param('string', 'message', 'The message we will send back')
-    jsonrpc.add_function(echo_func)
-
-    add_func = RpcFunction(add, 'add', 'Adds two numbers', 'int',
-            'Sum of the two numbers')
-    add_func.add_param('int', 'a', 'First int to add')
-    add_func.add_param('int', 'b', 'Second int to add')
-    jsonrpc.add_function(add_func)
-
-    print(json.dumps(jsonrpc.describe_functions()))
-    print(json.dumps(jsonrpc.process_request('{"method": "echo", "params": ["Hello JSON-RPC"], "id": 1}')))
-    print(json.dumps(jsonrpc.process_request('{"method": "add", "params": [5, 8], "id": 2}')))
-    print(json.dumps(jsonrpc.process_request('{"method": "addme", "params": [5, 8], "id": 2}')))
