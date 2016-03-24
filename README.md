@@ -52,12 +52,12 @@ To get an overview of what *rpcsh* can do just type *help*
 
 ReflectRPC supports the following datatypes:
 
-|Type   |
-|-------|
-|bool   |
-|int    |
-|float  |
-|string |
-|array  |
-|hash   |
-|base64 |
+|Type   |Description                        |
+|-------|:----------------------------------|
+|bool   | true or false                     |
+|int    | integer number                    |
+|float  | floating point number             |
+|string | string                            |
+|array  | JSON array with arbitrary content |
+|hash   | JSON hash with arbitrary content  |
+|base64 | Base64 encoded binary data        |
