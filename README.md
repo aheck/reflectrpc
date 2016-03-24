@@ -7,7 +7,7 @@ This ability to use reflection is utilized by the included JSON-RPC shell *rpcsh
 ## Example ##
 
 Write a function and register it (including its documentation):
-```
+```python
 def add(a, b):
     return int(a) + int(b)
 
