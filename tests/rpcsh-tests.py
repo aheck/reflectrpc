@@ -14,8 +14,20 @@ class RpcShTests(unittest.TestCase):
         tokens = split_exec_line('echo "Hello Server"')
         self.assertEqual(tokens, ['echo', 'Hello Server'])
 
+        tokens = split_exec_line('  echo   "Hello Server"    ')
+        self.assertEqual(tokens, ['echo', 'Hello Server'])
+
         tokens = split_exec_line('add 4 5')
         self.assertEqual(tokens, ['add', 4, 5])
+
+        tokens = split_exec_line('add 4452 5980')
+        self.assertEqual(tokens, ['add', 4452, 5980])
+
+        tokens = split_exec_line('    add    4     5    ')
+        self.assertEqual(tokens, ['add', 4, 5])
+
+        tokens = split_exec_line('test 4 [5]')
+        self.assertEqual(tokens, ['test', 4, [5]])
 
 if __name__ == '__main__':
     unittest.main()

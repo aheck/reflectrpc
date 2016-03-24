@@ -28,12 +28,17 @@ def split_exec_line(line):
 
     for c in line:
         if c.isspace():
-            # new token?
-            if intoken and not arraylevel and not hashlevel and not instring:
+            if not intoken:
+                lastc = c
+                continue
+
+            # end of token?
+            if not arraylevel and not hashlevel and not instring:
                 tokens.append(curtoken.strip())
                 curtoken = ''
+                intoken = False
         else:
-            if not intoken: intoken = True
+            intoken = True
 
         if intoken:
             curtoken += c
@@ -56,12 +61,12 @@ def split_exec_line(line):
 
         lastc = c
 
-    if len(curtoken):
+    if len(curtoken.strip()):
         tokens.append(curtoken.strip())
 
     # type casting
     itertokens = iter(tokens)
-    next(itertokens)
+    next(itertokens) # skip first token which is the method name
     for i, t in enumerate(itertokens):
         i += 1
         try:
