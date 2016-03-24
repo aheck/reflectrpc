@@ -25,3 +25,25 @@ server.run()
 
 Connect to the server:
 > ./rpcsh localhost 5500
+
+![rpcsh](/pics/intro.png)
+
+Now you can get a list of RPC functions available on the server:
+
+![List remote functions](/pics/list.png)
+
+You can take a look at the documentation of a function and its parameters:
+
+![Show documentation of remote function](/pics/doc.png)
+
+You can call it from *rpcsh*
+
+![Execute remote function](/pics/exec.png)
+
+Or send a literal JSON-RPC request to the server
+
+![Send raw JSON-RPC request to server](/pics/raw.png)
+
+To get an overview of what *rpcsh* can do just type *help*
+
+![Help](/pics/help.png)
