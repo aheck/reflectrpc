@@ -62,7 +62,58 @@ ReflectRPC supports the following datatypes:
 |hash   | JSON hash with arbitrary content  |
 |base64 | Base64 encoded binary data        |
 
+## Reporting Errors ##
 
-##Contact##
+A common problem when writing RPC services is reporting errors to the user. On
+the one hand you want to report as much information about a problem to the
+user to make life as easy as possible for him. On the other hand you have to
+hide internal errors for security reasons and only make errors produced by the
+client visible outside because otherwise you make life easy for people who want
+to break into your server.
+
+Therefore when a RPC function is called ReflectRPC catches all exceptions and
+returns only a generic "internal error" in the JSON-RPC reply. To return more
+information about an error to the user you can derive custom exception classes
+from *JsonRpcError*. All exceptions that are of this class or a subclass
+are serialized and returned to the client.
+
+This allows to serialize exceptions and return them to the user but at the
+same time gives you fine-grained control over what error information actually
+leaves the server.
+
+### Example ###
+
+```python
+def internal_error():
+    raise ValueError("This should not be visible to the client")
+
+def json_error():
+    raise JsonRpcError("User-visible error")
+
+rpc = RpcProcessor()
+
+error_func1 = RpcFunction(internal_error, 'internal_error', 'Produces internal error',
+        'bool', '')
+error_func2 = RpcFunction(json_error, 'json_error', 'Raises JsonRpcError',
+        'bool', '')
+
+rpc.add_function(error_func1)
+rpc.add_function(error_func2)
+```
+
+Now a call to *internel_error()* will yield the following response from the
+server:
+
+```javascript
+{"result": null, "error": "Internal error", "id": 1}
+```
+
+While the result of *json_error* will look like this:
+
+```javascript
+{"result": null, "error": {"name": "JsonRpcError", "message": "User error"}, "id": 1}
+```
+
+## Contact ##
 
 Andreas Heck <<aheck@gmx.de>>

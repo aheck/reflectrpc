@@ -5,6 +5,21 @@ import socket
 
 json_types = ['int', 'bool', 'float', 'string', 'array', 'hash', 'base64']
 
+class JsonRpcError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
+    def to_json(self):
+        error = {}
+
+        error['name'] = type(self).__name__
+        error['message'] = self.msg
+
+        return error
+
 class RpcFunction:
     """
     Description of a function exposed as RPC
@@ -51,6 +66,9 @@ class RpcProcessor:
         self.functions_dict = {}
 
     def add_function(self, func):
+        if func.name in self.functions_dict:
+            raise ValueError("Another function of the name '%s' is already registered" % (func.name))
+
         self.functions.append(func)
         self.functions_dict[func.name] = func
 
@@ -60,6 +78,10 @@ class RpcProcessor:
             functions.append(item.to_dict())
 
         return functions
+
+    def call_function(self, name, func, func_desc, *params):
+        """Executes the actual function. Can be overridden for concurrent execution e.g."""
+        return func(*params)
 
     def process_request(self, message):
         reply = {}
@@ -102,7 +124,6 @@ class RpcProcessor:
             reply['error'] = "Field 'params' must contain an array"
             return reply
 
-
         # check for builtin __describe_functions
         if request['method'] == '__describe_functions':
             reply['result'] = self.describe_functions()
@@ -114,16 +135,24 @@ class RpcProcessor:
 
         try:
             reply['error'] = None
-            func = self.functions_dict[request['method']].func
-            reply['result'] = func(*request['params'])
+            func_desc = self.functions_dict[request['method']]
+            func = func_desc.func
+
+            try:
+                reply['result'] = self.call_function(func_desc.name, func,
+                        func_desc, *request['params'])
+            except JsonRpcError as e:
+                reply['error'] = e.to_json()
+                reply['result'] = None
+            except Exception as e:
+                reply['error'] = "Internal error"
+                reply['result'] = None
+
             return reply
         except Exception as e:
             print(e)
             reply['error'] = "Method execution failed: %s" % (request['method'])
             return reply
-
-        def call_function(self, name, func, func_desc):
-            """Executes the actual function. Can be overridden for concurrent execution e.g."""
 
 class RpcError(Exception):
     def __init__(self, msg):
