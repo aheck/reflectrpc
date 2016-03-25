@@ -26,8 +26,24 @@ class RpcShTests(unittest.TestCase):
         tokens = split_exec_line('    add    4     5    ')
         self.assertEqual(tokens, ['add', 4, 5])
 
+        tokens = split_exec_line('test 4 5 "A String" "Another String" 3424 453.9 true null "Yet another String"')
+        self.assertEqual(tokens, ['test', 4, 5, 'A String', 'Another String',
+            3424, 453.9, True, None, 'Yet another String'])
+
         tokens = split_exec_line('test 4 [5]')
         self.assertEqual(tokens, ['test', 4, [5]])
+
+        tokens = split_exec_line('test 4 [5   ]')
+        self.assertEqual(tokens, ['test', 4, [5]])
+
+        tokens = split_exec_line('    test    4   [   5   ]')
+        self.assertEqual(tokens, ['test', 4, [5]])
+
+        tokens = split_exec_line('test ["Hello Server", 5, "String"] [5]')
+        self.assertEqual(tokens, ['test', ["Hello Server", 5, "String"], [5]])
+
+        tokens = split_exec_line('test {"num": 5, "name": "object"}')
+        self.assertEqual(tokens, ['test', {'num': 5, 'name': 'object'}])
 
 if __name__ == '__main__':
     unittest.main()
