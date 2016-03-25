@@ -108,7 +108,7 @@ server:
 {"result": null, "error": "Internal error", "id": 1}
 ```
 
-While the result of *json_error* will look like this:
+While the result of *json_error()* will look like this:
 
 ```javascript
 {"result": null, "error": {"name": "JsonRpcError", "message": "User error"}, "id": 1}
