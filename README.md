@@ -8,6 +8,9 @@ This ability to use reflection is utilized by the included JSON-RPC shell *rpcsh
 
 Write a function and register it (including its documentation):
 ```python
+import reflectrpc
+import reflectrpc.simpleserver
+
 def add(a, b):
     return int(a) + int(b)
 
