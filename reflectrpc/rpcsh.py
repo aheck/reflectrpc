@@ -4,6 +4,7 @@ import sys
 from cmd import Cmd
 
 from reflectrpc import RpcClient
+from reflectrpc import RpcError
 import reflectrpc
 
 def print_functions(functions):
@@ -83,7 +84,12 @@ class ReflectRpcShell(Cmd):
         super().__init__()
 
         self.client = RpcClient(host, port)
-        self.functions = self.client.rpc_call('__describe_functions')
+
+        try:
+            self.functions = self.client.rpc_call('__describe_functions')
+        except RpcError:
+            self.functions = []
+
         self.prompt = '(rpc) '
         self.intro = "ReflectRpc Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (host, port)
 
