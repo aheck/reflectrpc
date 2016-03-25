@@ -65,9 +65,9 @@ ReflectRPC supports the following datatypes:
 |hash   | JSON hash with arbitrary content  |
 |base64 | Base64 encoded binary data        |
 
-## Reporting Errors ##
+## Returning Errors ##
 
-A common problem when writing RPC services is reporting errors to the user. On
+A common problem when writing RPC services is returning errors to the user. On
 the one hand you want to report as much information about a problem to the
 user to make life as easy as possible for him. On the other hand you have to
 hide internal errors for security reasons and only make errors produced by the
