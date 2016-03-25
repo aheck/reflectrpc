@@ -83,18 +83,26 @@ leaves the server.
 
 ### Example ###
 
+We can define two RPC functions named *internal_error()* and *json_error()* to
+demonstrate this behaviour. The first function raises a *ValueError*. Internal
+exceptions like this must not be visible to the client. The function
+*json_error()* on the other hand raises an exception of type *JsonRpcError*.
+Since this exception is specially defined for the sole purpose of being
+returned to the client it will be serialized and returned as a JSON-RPC error
+object.
+
 ```python
 def internal_error():
     raise ValueError("This should not be visible to the client")
 
 def json_error():
-    raise JsonRpcError("User-visible error")
+    raise reflectrpc.JsonRpcError("User-visible error")
 
-rpc = RpcProcessor()
+rpc = reflectrpc.RpcProcessor()
 
-error_func1 = RpcFunction(internal_error, 'internal_error', 'Produces internal error',
+error_func1 = reflectrpc.RpcFunction(internal_error, 'internal_error', 'Produces internal error',
         'bool', '')
-error_func2 = RpcFunction(json_error, 'json_error', 'Raises JsonRpcError',
+error_func2 = reflectrpc.RpcFunction(json_error, 'json_error', 'Raises JsonRpcError',
         'bool', '')
 
 rpc.add_function(error_func1)
@@ -111,7 +119,10 @@ server:
 While the result of *json_error()* will look like this:
 
 ```javascript
-{"result": null, "error": {"name": "JsonRpcError", "message": "User error"}, "id": 1}
+{"result": null, "error": {"name": "JsonRpcError", "message": "User error"}, "id": 2}
+
+Both results are as expected. You can send back your own errors over JSON-RPC in
+a controlled manner but internal errors are hidden from the client.
 ```
 
 ## Contact ##
