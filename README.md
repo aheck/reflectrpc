@@ -61,3 +61,8 @@ ReflectRPC supports the following datatypes:
 |array  | JSON array with arbitrary content |
 |hash   | JSON hash with arbitrary content  |
 |base64 | Base64 encoded binary data        |
+
+
+##Contact##
+
+Andreas Heck <<aheck@gmx.de>>
