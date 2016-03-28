@@ -7,6 +7,21 @@ from reflectrpc import RpcClient
 from reflectrpc import RpcError
 import reflectrpc
 
+def print_types(types):
+    for t in types:
+        if t['type'] == 'enum':
+            print('enum: %s' % (t['name']))
+            print('Description: %s' % (t['description']))
+            for value in t['values']:
+                print('    [%d] %s - %s' % (value['intvalue'], value['name'], value['description']))
+        elif t['type'] == 'hash':
+            print('hash: %s' % (t['name']))
+            print('Description: %s' % (t['description']))
+            for field in t['fields']:
+                print('    [%s] %s - %s' % (field['type'], field['name'], field['description']))
+        else:
+            print('Unknown class of custom type: %s' % (t['type']))
+
 def print_functions(functions):
     for func_desc in functions:
         paramlist = [param['name'] for param in func_desc['params']]
@@ -14,7 +29,7 @@ def print_functions(functions):
 
         print("%s(%s) - %s" % (func_desc['name'], paramlist, func_desc['description']))
         for param in func_desc['params']:
-            print("    [%s] %s - %s" % (param['type'], param['name'], param['desc']))
+            print("    [%s] %s - %s" % (param['type'], param['name'], param['description']))
         print("    Result: %s - %s" % (func_desc['result_type'], func_desc['result_desc']))
 
 def split_exec_line(line):
@@ -90,8 +105,13 @@ class ReflectRpcShell(Cmd):
         except RpcError:
             self.functions = []
 
+        try:
+            self.custom_types = self.client.rpc_call('__describe_custom_types')
+        except:
+            self.custom_types = []
+
         self.prompt = '(rpc) '
-        self.intro = "ReflectRpc Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (host, port)
+        self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (host, port)
 
         self.host = host
         self.port = port
@@ -100,6 +120,7 @@ class ReflectRpcShell(Cmd):
         if not line:
             print("list - List all RPC functions advertised by the server")
             print("doc  - Shows the documentation of a RPC function")
+            print("type - Shows the documentation of a custom RPC type")
             print("exec - Execute RPC call")
             print("raw  - Directly send a raw JSON-RPC message to the server")
             print("quit - Quit this program")
@@ -123,6 +144,18 @@ class ReflectRpcShell(Cmd):
             pass
         else:
             print("No help for unknown command:", line)
+
+    def do_type(self, line):
+        if not line:
+            print("You have to pass the name of a custom RPC type: 'type [typename]'")
+            return
+
+        t = [t for t in self.custom_types if t['name'] == line]
+
+        if not t:
+            print("Unknown custom RPC type:", line)
+
+        print_types(t)
 
     def do_exec(self, line):
         tokens = split_exec_line(line)

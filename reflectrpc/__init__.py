@@ -20,12 +20,86 @@ class JsonRpcError(Exception):
 
         return error
 
+class JsonEnumType:
+    """
+    Self-describing enum types
+    """
+    def __init__(self, name, description, start=0):
+        self.curvalue = start
+
+        if not name[0].isupper():
+            raise ValueError("The Name of a custom type has to start with an upper-case letter")
+
+        self.name = name
+        self.typ = 'enum'
+        self.description = description
+        self.values = []
+
+    def add_value(self, name, description):
+        value = {}
+
+        value['name'] = name
+        value['description'] = description
+        value['intvalue'] = self.curvalue
+        self.curvalue += 1
+
+        self.values.append(value)
+
+    def resolve(self, value):
+        return None
+
+    def to_dict(self):
+        d = {}
+
+        d['name'] = self.name
+        d['type'] = self.typ
+        d['description'] = self.description
+        d['values'] = self.values
+
+        return d
+
+class JsonHashType:
+    """
+    Self-describing hashes
+    """
+    def __init__(self, name, description):
+        if not name[0].isupper():
+            raise ValueError("The Name of a custom type has to start with an upper-case letter")
+
+        self.name = name
+        self.typ = 'hash'
+        self.description = description
+        self.fields = []
+
+    def add_field(self, name, typ, description):
+        if not typ in json_types and not result_type[0].isupper():
+            raise ValueError("Invalid JSON-RPC type: %s" % (typ))
+
+        field = {}
+
+        field['name'] = name
+        field['type'] = typ
+        field['description'] = description
+
+        self.fields.append(field)
+
+    def to_dict(self):
+        d = {}
+
+        d['name'] = self.name
+        d['type'] = self.typ
+        d['description'] = self.description
+
+        d['fields'] = self.fields
+
+        return d
+
 class RpcFunction:
     """
     Description of a function exposed as RPC
     """
     def __init__(self, func, name, description, result_type, result_desc):
-        if not result_type in json_types:
+        if not result_type in json_types and not result_type[0].isupper():
             raise ValueError("Invalid JSON-RPC type: %s" % (result_type))
 
         if not callable(func):
@@ -40,10 +114,10 @@ class RpcFunction:
         self.params = []
 
     def add_param(self, typ, name, description):
-        if not typ in json_types:
+        if not typ in json_types and not typ[0].isupper():
             raise ValueError("Invalid JSON-RPC type: %s" % (typ))
 
-        param = {'name': name, 'type': typ, 'desc': description}
+        param = {'name': name, 'type': typ, 'description': description}
         self.params.append(param)
 
     def to_dict(self):
@@ -53,7 +127,19 @@ class RpcFunction:
         d['description'] = self.description
         d['result_type'] = self.result_type
         d['result_desc'] = self.result_desc
-        d['params'] = self.params
+
+        params = []
+
+        for p in self.params:
+            param = {}
+
+            param['name'] = p['name']
+            param['description'] = p['description']
+            param['type'] = p['type']
+
+            params.append(param)
+
+        d['params'] = params
 
         return d
 
@@ -65,19 +151,45 @@ class RpcProcessor:
         self.functions = []
         self.functions_dict = {}
 
+        self.custom_types = []
+        self.custom_types_dict = {}
+
+    def add_custom_type(self, custom_type):
+        if type(custom_type) != JsonEnumType and type(custom_type) != JsonHashType:
+            raise ValueError("Custom type must be of class JsonEnumType or JsonHashType")
+
+        if custom_type.name in self.custom_types_dict.keys():
+            raise ValueError("Custom type with name '%s' already exists!",
+                    custom_type.name)
+
+        self.custom_types.append(custom_type)
+        self.custom_types_dict[custom_type.name] = custom_type
+
     def add_function(self, func):
         if func.name in self.functions_dict:
             raise ValueError("Another function of the name '%s' is already registered" % (func.name))
 
+        if func.result_type[0].isupper() and not func.result_type in self.custom_types_dict.keys():
+            raise ValueError("Unknown custom type: '%s'" % (func.result_type))
+
+        for param in func.params:
+            if not param['type'][0].isupper(): continue
+
+            if not param['type'] in self.custom_types_dict.keys():
+                raise ValueError("Unknown custom type: '%s'" % (param['type']))
+
         self.functions.append(func)
         self.functions_dict[func.name] = func
 
-    def describe_functions(self):
-        functions = []
-        for item in self.functions:
-            functions.append(item.to_dict())
+        self.builtins = {}
+        self.builtins['__describe_functions'] = self.describe_functions
+        self.builtins['__describe_custom_types'] = self.describe_custom_types
 
-        return functions
+    def describe_functions(self):
+        return [function.to_dict() for function in self.functions]
+
+    def describe_custom_types(self):
+        return [custom_type.to_dict() for custom_type in self.custom_types]
 
     def call_function(self, name, func, func_desc, *params):
         """Executes the actual function. Can be overridden for concurrent execution e.g."""
@@ -124,9 +236,9 @@ class RpcProcessor:
             reply['error'] = "Field 'params' must contain an array"
             return reply
 
-        # check for builtin __describe_functions
-        if request['method'] == '__describe_functions':
-            reply['result'] = self.describe_functions()
+        # check for builtins
+        if request['method'] in self.builtins:
+            reply['result'] = self.builtins[request['method']]()
             return reply
 
         if not request['method'] in self.functions_dict:

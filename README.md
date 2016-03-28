@@ -112,7 +112,7 @@ rpc.add_function(error_func1)
 rpc.add_function(error_func2)
 ```
 
-Now a call to *internel_error()* will yield the following response from the
+Now a call to *internal_error()* will yield the following response from the
 server:
 
 ```javascript
