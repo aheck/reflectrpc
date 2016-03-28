@@ -65,6 +65,46 @@ ReflectRPC supports the following datatypes:
 |hash   | JSON hash with arbitrary content  |
 |base64 | Base64 encoded binary data        |
 
+## Custom Datatypes ##
+
+There are two types of custom datatypes you can define: Enums and named hashes.
+For that you have to create an instance of the class *JsonEnumType* or
+*JsonHashType*, respectively. This object is filled similarly to *RpcProcessor*
+and then registered to your *RpcProcessor* by calling the *add_custom_type*
+method.
+
+But lets look at an example:
+
+```python
+phone_type_enum = reflectrpc.JsonEnumType('PhoneType', 'Type of a phone number')
+phone_type_enum.add_value('HOME', 'Home phone')
+phone_type_enum.add_value('WORK', 'Work phone')
+phone_type_enum.add_value('MOBILE', 'Mobile phone')
+phone_type_enum.add_value('FAX', 'FAX number')
+
+address_hash = reflectrpc.JsonHashType('Address', 'Street address')
+address_hash.add_field('firstname', 'string', 'First name')
+address_hash.add_field('lastname', 'string', 'Last name')
+address_hash.add_field('street1', 'string', 'First address line')
+address_hash.add_field('street2', 'string', 'Second address line')
+address_hash.add_field('zipcode', 'string', 'Zip code')
+address_hash.add_field('city', 'string', 'City')
+
+jsonrpc = reflectrpc.RpcProcessor()
+jsonrpc.add_custom_type(phone_type_enum)
+jsonrpc.add_custom_type(address_hash)
+```
+
+This creates an enum named *PhoneType* and a named hash type to hold street
+addresses which is named *Address* and registers them to an *RpcProcessor*.
+These new types can now be used with all RPC functions that are to be added
+to this *RpcProcessor* simply by using their instead of one of the basic
+datatype names. All custom type names have to start with an upper-case letter.
+
+Custom types can be inspected in *rpcsh* with the *type* command:
+
+![Inspecting custom datatypes in rpcsh](/pics/customtypes.png)
+
 ## Returning Errors ##
 
 A common problem when writing RPC services is returning errors to the user. On
