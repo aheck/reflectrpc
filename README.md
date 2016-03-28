@@ -53,7 +53,7 @@ To get an overview of what *rpcsh* can do just type *help*
 
 ## Datatypes ##
 
-ReflectRPC supports the following datatypes:
+ReflectRPC supports the following basic datatypes:
 
 |Type   |Description                        |
 |-------|:----------------------------------|
