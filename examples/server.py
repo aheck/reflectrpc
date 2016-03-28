@@ -43,6 +43,7 @@ def hash_echo(address_hash):
     return address_hash
 
 jsonrpc = reflectrpc.RpcProcessor()
+jsonrpc.description = "This is an example service for ReflectRPC"
 
 # register types
 jsonrpc.add_custom_type(phone_type_enum)

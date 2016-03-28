@@ -101,6 +101,11 @@ class ReflectRpcShell(Cmd):
         self.client = RpcClient(host, port)
 
         try:
+            self.service_description = self.client.rpc_call('__describe_service')
+        except RpcError:
+            self.service_description = ''
+
+        try:
             self.functions = self.client.rpc_call('__describe_functions')
         except RpcError:
             self.functions = []
@@ -112,6 +117,9 @@ class ReflectRpcShell(Cmd):
 
         self.prompt = '(rpc) '
         self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (host, port)
+
+        if self.service_description:
+            self.intro += "\n\nSelf-description of Service:\n============================\n" + self.service_description
 
         self.host = host
         self.port = port
