@@ -77,7 +77,7 @@ class RpcProcessorTests(unittest.TestCase):
         rpc.add_function(error_func)
 
         reply = rpc.process_request('{"method": "internal_error", "params": [], "id": 1}')
-        self.assertEqual(reply['error'], 'Internal error')
+        self.assertEqual(reply['error'], {'name': 'InternalError', 'message': 'Internal error'})
 
     def test_json_exception(self):
         rpc = RpcProcessor()
