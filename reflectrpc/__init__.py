@@ -1,3 +1,5 @@
+from builtins import str
+
 import os
 import sys
 import json
@@ -8,17 +10,28 @@ json_types = ['int', 'bool', 'float', 'string', 'array', 'hash', 'base64']
 class JsonRpcError(Exception):
     def __init__(self, msg):
         self.msg = msg
+        self.name = type(self).__name__
 
     def __str__(self):
-        return self.msg
+        return '%s: %s' % (self.name, self.msg)
 
-    def to_json(self):
+    def to_dict(self):
         error = {}
 
-        error['name'] = type(self).__name__
+        error['name'] = self.name
         error['message'] = self.msg
 
         return error
+
+class JsonRpcInvalidRequest(JsonRpcError):
+    def __init__(self, msg):
+        super().__init__(msg)
+        self.name = 'InvalidRequest'
+
+class JsonRpcInternalError(JsonRpcError):
+    def __init__(self, msg):
+        super().__init__(msg)
+        self.name = 'InternalError'
 
 class JsonEnumType(object):
     """
@@ -211,35 +224,42 @@ class RpcProcessor(object):
             request = json.loads(message)
         except ValueError:
             reply['id'] = -1
-            reply['error'] = "Received invalid JSON"
+            error = JsonRpcInvalidRequest("Received invalid JSON")
+            reply['error'] = error.to_dict()
             return reply
 
         if not 'id' in request.keys():
             reply['id'] = -1
-            reply['error'] = "Field 'id' missing in request"
+            error = JsonRpcInvalidRequest("Field 'id' missing in request")
+            reply['error'] = error.to_dict()
             return reply
 
         if not isinstance(request['id'], int):
             reply['id'] = -1
-            reply['error'] = "Field 'id' must contain an integer value"
+            error = JsonRpcInvalidRequest("Field 'id' must contain an integer value")
+            reply['error'] = error.to_dict()
             return reply
 
         reply['id'] = request['id']
 
         if not 'method' in request.keys():
-            reply['error'] = "Field 'method' missing in request"
+            error = JsonRpcInvalidRequest("Field 'method' missing in request")
+            reply['error'] = error.to_json()
             return reply
 
         if not isinstance(request['method'], str):
-            reply['error'] = "Field 'method' must contain a string value"
+            error = JsonRpcInvalidRequest("Field 'method' must contain a string value")
+            reply['error'] = error.to_dict()
             return reply
 
         if not 'params' in request.keys():
-            reply['error'] = "Field 'params' missing in request"
+            error = JsonRpcInvalidRequest("Field 'params' missing in request")
+            reply['error'] = error.to_dict()
             return reply
 
         if not isinstance(request['params'], list):
-            reply['error'] = "Field 'params' must contain an array"
+            error = JsonRpcInvalidRequest("Field 'params' must contain an array")
+            reply['error'] = error.to_dict()
             return reply
 
         # check for builtins
@@ -248,7 +268,8 @@ class RpcProcessor(object):
             return reply
 
         if not request['method'] in self.functions_dict:
-            reply['error'] = "No such method: %s. Call '__describe_functions' to get details on available function calls" % (request['method'])
+            error = JsonRpcInvalidRequest("No such method: %s. Call '__describe_functions' to get details on available function calls" % (request['method']))
+            reply['error'] = error.to_dict()
             return reply
 
         try:
@@ -260,7 +281,7 @@ class RpcProcessor(object):
                 reply['result'] = self.call_function(func_desc.name, func,
                         func_desc, *request['params'])
             except JsonRpcError as e:
-                reply['error'] = e.to_json()
+                reply['error'] = e.to_dict()
                 reply['result'] = None
             except Exception as e:
                 reply['error'] = "Internal error"
@@ -269,7 +290,8 @@ class RpcProcessor(object):
             return reply
         except Exception as e:
             print(e)
-            reply['error'] = "Method execution failed: %s" % (request['method'])
+            error = JsonRpcInternalError("Method execution failed: %s" % (request['method']))
+            reply['error'] = error.to_dict()
             return reply
 
 class RpcError(Exception):
