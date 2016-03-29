@@ -168,7 +168,7 @@ While the result of *json_error()* will look like this:
 Both results are as expected. You can send back your own errors over JSON-RPC in
 a controlled manner but internal errors are hidden from the client.
 
-## Licensing ##
+## License ##
 
 ReflectRPC is licensed under the very liberal MIT license
 
