@@ -156,7 +156,7 @@ Now a call to *internal_error()* will yield the following response from the
 server:
 
 ```javascript
-{"result": null, "error": "Internal error", "id": 1}
+{"result": null, "error": {"name": "InternalError", "message": "Internal error"}, "id": 1}
 ```
 
 While the result of *json_error()* will look like this:

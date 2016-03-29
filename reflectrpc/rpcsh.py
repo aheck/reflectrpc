@@ -175,7 +175,7 @@ class ReflectRpcShell(Cmd):
         try:
             print("Server replied:", self.client.rpc_call(method, *tokens))
         except reflectrpc.RpcError as e:
-            print("Error:", e)
+            print(e)
 
     def do_raw(self, line):
         print(self.client.rpc_call_raw(line))

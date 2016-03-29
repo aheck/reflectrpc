@@ -284,7 +284,9 @@ class RpcProcessor(object):
                 reply['error'] = e.to_dict()
                 reply['result'] = None
             except Exception as e:
-                reply['error'] = "Internal error"
+                print(e)
+                error = JsonRpcInternalError("Internal error")
+                reply['error'] = error.to_dict()
                 reply['result'] = None
 
             return reply
@@ -299,7 +301,7 @@ class RpcError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return "ERROR: " + str(msg)
+        return "ERROR: " + str(self.msg)
 
 class RpcClient(object):
     def __init__(self, host, port):
