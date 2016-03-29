@@ -20,7 +20,7 @@ class JsonRpcError(Exception):
 
         return error
 
-class JsonEnumType:
+class JsonEnumType(object):
     """
     Self-describing enum types
     """
@@ -58,7 +58,7 @@ class JsonEnumType:
 
         return d
 
-class JsonHashType:
+class JsonHashType(object):
     """
     Self-describing hashes
     """
@@ -94,7 +94,7 @@ class JsonHashType:
 
         return d
 
-class RpcFunction:
+class RpcFunction(object):
     """
     Description of a function exposed as RPC
     """
@@ -143,7 +143,7 @@ class RpcFunction:
 
         return d
 
-class RpcProcessor:
+class RpcProcessor(object):
     """
     A JSON-RPC server that is capable of describing all its RPC functions to the client
     """
@@ -279,7 +279,7 @@ class RpcError(Exception):
     def __str__(self):
         return "ERROR: " + str(msg)
 
-class RpcClient:
+class RpcClient(object):
     def __init__(self, host, port):
         self.host = host
         self.port = port

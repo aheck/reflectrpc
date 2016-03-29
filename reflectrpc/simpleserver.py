@@ -1,9 +1,11 @@
+from __future__ import print_function
+
 import os
 import sys
 import json
 import socket
 
-class SimpleJsonRpcServer:
+class SimpleJsonRpcServer(object):
     """
     Simple JSON-RPC server
 
