@@ -10,7 +10,7 @@ from reflectrpc import RpcFunction
 def dummy_function():
     pass
 
-class RpcProcessorTests(unittest.TestCase):
+class RpcFunctionTests(unittest.TestCase):
     def test_valid_types_in_constructor(self):
         try:
             RpcFunction(dummy_function, 'dummy',
@@ -101,6 +101,27 @@ class RpcProcessorTests(unittest.TestCase):
         dummy_func = RpcFunction(dummy_function, 'dummy',
                 'Dummy function', 'int', 'Return value')
         self.assertRaises(ValueError, dummy_func.add_param, 'noint', 'a', 'First parameter')
+
+    # Custom type tests
+    #
+    # custom types start with a captial letter and their check is postponed to
+    # the time the function gets registered so they should always be accepted
+    # when building a RpcFunction object, whether they exist or not
+
+    def test_custom_type_as_result_type(self):
+        try:
+            RpcFunction(dummy_function, 'dummy',
+                'Dummy function', 'ImaginaryCustomType', 'Return value')
+        except:
+            self.fail("RpcFunction constructor raised unexpected exception!")
+
+    def test_custom_type_in_add_param(self):
+        dummy_func = RpcFunction(dummy_function, 'dummy',
+                'Dummy function', 'int', 'Return value')
+        try:
+            dummy_func.add_param('ImaginaryCustomType', 'a', 'First parameter')
+        except:
+            self.fail("add_param raised unexpected exception!")
 
 if __name__ == '__main__':
     unittest.main()
