@@ -44,7 +44,7 @@ class SimpleJsonRpcServer(object):
 
                 for i in range(count):
                     line = lines.pop(0)
-                    reply_line = json.dumps(self.jsonrpc.process_request(line)) + "\n"
+                    reply_line = json.dumps(self.jsonrpc.process_request(line)) + "\r\n"
                     conn.sendall(reply_line.encode("utf-8"))
 
                 buf = ''

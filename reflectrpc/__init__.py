@@ -169,6 +169,11 @@ class RpcProcessor(object):
 
         self.description = ''
 
+        self.builtins = {}
+        self.builtins['__describe_service'] = self.describe_service
+        self.builtins['__describe_functions'] = self.describe_functions
+        self.builtins['__describe_custom_types'] = self.describe_custom_types
+
     def add_custom_type(self, custom_type):
         if type(custom_type) != JsonEnumType and type(custom_type) != JsonHashType:
             raise ValueError("Custom type must be of class JsonEnumType or JsonHashType")
@@ -195,11 +200,6 @@ class RpcProcessor(object):
 
         self.functions.append(func)
         self.functions_dict[func.name] = func
-
-        self.builtins = {}
-        self.builtins['__describe_service'] = self.describe_service
-        self.builtins['__describe_functions'] = self.describe_functions
-        self.builtins['__describe_custom_types'] = self.describe_custom_types
 
     def describe_service(self):
         return self.description
