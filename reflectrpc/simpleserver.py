@@ -5,6 +5,12 @@ import sys
 import json
 import socket
 
+import reflectrpc.server
+
+class JsonRpcServer(reflectrpc.server.AbstractJsonRpcServer):
+    def send_data(self, data):
+        self.conn.sendall(data)
+
 class SimpleJsonRpcServer(object):
     """
     Simple JSON-RPC server
@@ -30,25 +36,12 @@ class SimpleJsonRpcServer(object):
 
         while 1:
             conn, addr = self.socket.accept()
+            self.server = JsonRpcServer(self.jsonrpc, conn)
             self.handle_connection(conn)
 
     def handle_connection(self, conn):
-        buf = ''
         data = conn.recv(4096)
 
         while data:
-            buf += data.decode("utf-8")
-            count = buf.count("\n")
-            if count > 0:
-                lines = buf.splitlines()
-
-                for i in range(count):
-                    line = lines.pop(0)
-                    reply_line = json.dumps(self.jsonrpc.process_request(line)) + "\r\n"
-                    conn.sendall(reply_line.encode("utf-8"))
-
-                buf = ''
-                if lines:
-                    buf = lines[0]
-
+            self.server.data_received(data)
             data = conn.recv(4096)

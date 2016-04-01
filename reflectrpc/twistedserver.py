@@ -5,25 +5,21 @@ import json
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
 
+import reflectrpc.server
+
+class JsonRpcServer(reflectrpc.server.AbstractJsonRpcServer):
+    def send_data(self, data):
+        self.conn.write(data)
+
 class JsonRpcProtocol(Protocol):
     def __init__(self):
         self.buf = ''
 
     def dataReceived(self, data):
-        self.buf += data.decode()
+        if not hasattr(self, 'server'):
+            self.server = JsonRpcServer(self.factory.jsonrpc, self.transport)
 
-        count = self.buf.count("\n")
-        if count > 0:
-            lines = self.buf.splitlines()
-
-            for i in range(count):
-                line = lines.pop(0)
-                reply_line = json.dumps(self.factory.jsonrpc.process_request(line)) + "\r\n"
-                self.transport.write(reply_line.encode("utf-8"))
-
-            self.buf = ''
-            if lines:
-                self.buf = lines[0]
+        self.server.data_received(data)
 
 class JsonRpcProtocolFactory(Factory):
     protocol = JsonRpcProtocol
