@@ -1,5 +1,7 @@
 # ReflectRPC #
 
+![Build Status](https://travis-ci.org/aheck/reflectrpc.svg?branch=master)
+
 Creating self-describing RPC services
 
 ## What is ReflectRPC? ##
