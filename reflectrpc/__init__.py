@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import socket
+import traceback
 
 json_types = ['int', 'bool', 'float', 'string', 'array', 'hash', 'base64']
 
@@ -25,12 +26,22 @@ class JsonRpcError(Exception):
 
 class JsonRpcInvalidRequest(JsonRpcError):
     def __init__(self, msg):
-        super().__init__(msg)
+        self.msg = msg
         self.name = 'InvalidRequest'
+
+class JsonRpcParamError(JsonRpcInvalidRequest):
+    def __init__(self, function_name, expected_count, real_count):
+        self.msg = "Expected %d parameters for '%s' but got %d" % (expected_count, function_name, real_count)
+        self.name = 'ParamError'
+
+class JsonRpcTypeError(JsonRpcInvalidRequest):
+    def __init__(self, function_name, param_name, expected_type, real_type):
+        self.msg = "%s: Expected type '%s' of parameter '%s' but got value of type '%s'" % (function_name, expected_type, param_name, real_type)
+        self.name = 'TypeError'
 
 class JsonRpcInternalError(JsonRpcError):
     def __init__(self, msg):
-        super().__init__(msg)
+        self.msg = msg
         self.name = 'InternalError'
 
 class JsonEnumType(object):
@@ -126,6 +137,8 @@ class RpcFunction(object):
 
         self.params = []
 
+        self.type_checks_enabled = True
+
     def add_param(self, typ, name, description):
         if not typ in json_types and not typ[0].isupper():
             raise ValueError("Invalid JSON-RPC type: %s" % (typ))
@@ -211,8 +224,29 @@ class RpcProcessor(object):
         return [custom_type.to_dict() for custom_type in self.custom_types]
 
     def call_function(self, name, func, func_desc, *params):
-        """Executes the actual function. Can be overridden for concurrent execution e.g."""
+        """
+        Executes the actual function. Can be overridden for concurrent execution e.g.
+        """
         return func(*params)
+
+    def check_request_types(self, func, params):
+        if len(params) != len(func.params):
+            raise JsonRpcParamError(func.name, len(func.params), len(params))
+
+        json2py = {'bool': 'bool', 'int': 'int', 'float': 'float', 'string':
+                'str', 'array': 'list', 'hash': 'dict', 'base64': 'str'}
+
+        py2json = {'bool': 'bool', 'int': 'int', 'float': 'float', 'str':
+                'string', 'list': 'array', 'dict': 'hash'}
+
+        i = 0
+
+        for p in func.params:
+            if type(params[i]).__name__ != json2py[p['type']]:
+                real_type = py2json[type(params[i]).__name__]
+                raise JsonRpcTypeError(func.name, p['name'], p['type'], real_type)
+
+            i += 1
 
     def process_request(self, message):
         reply = {}
@@ -278,20 +312,23 @@ class RpcProcessor(object):
             func = func_desc.func
 
             try:
+                if func_desc.type_checks_enabled:
+                    self.check_request_types(func_desc, request['params'])
+
                 reply['result'] = self.call_function(func_desc.name, func,
                         func_desc, *request['params'])
             except JsonRpcError as e:
                 reply['error'] = e.to_dict()
                 reply['result'] = None
             except Exception as e:
-                print(e)
+                traceback.print_exc()
                 error = JsonRpcInternalError("Internal error")
                 reply['error'] = error.to_dict()
                 reply['result'] = None
 
             return reply
         except Exception as e:
-            print(e)
+            traceback.print_exc()
             error = JsonRpcInternalError("Method execution failed: %s" % (request['method']))
             reply['error'] = error.to_dict()
             return reply
