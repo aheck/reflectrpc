@@ -41,9 +41,11 @@ class RpcProcessorTests(unittest.TestCase):
 
         echo_func = RpcFunction(echo, 'echo', 'Returns what it was given',
                 'string', 'Same value as the first parameter')
+        echo_func.add_param('string', 'message', 'Message to send back')
 
         rpc.add_function(echo_func)
         reply = rpc.process_request('{"method": "echo", "params": ["Hello Server"], "id": 1}')
+        print(json.dumps(reply))
         self.assertEqual(reply['result'], "Hello Server")
 
     def test_add(self):
