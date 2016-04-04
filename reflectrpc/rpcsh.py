@@ -101,19 +101,11 @@ class ReflectRpcShell(Cmd):
         self.client = RpcClient(host, port)
 
         try:
-            self.service_description = self.client.rpc_call('__describe_service')
-        except RpcError:
-            self.service_description = ''
-
-        try:
-            self.functions = self.client.rpc_call('__describe_functions')
-        except RpcError:
-            self.functions = []
-
-        try:
-            self.custom_types = self.client.rpc_call('__describe_custom_types')
-        except:
-            self.custom_types = []
+            self.retrieve_service_description()
+            self.retrieve_functions()
+            self.retrieve_custom_types()
+        except ConnectionRefusedError:
+            self.connection_refused_error(True)
 
         self.prompt = '(rpc) '
         self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (host, port)
@@ -123,6 +115,32 @@ class ReflectRpcShell(Cmd):
 
         self.host = host
         self.port = port
+
+    def retrieve_service_description(self):
+        self.service_description = ''
+        try:
+            self.service_description = self.client.rpc_call('__describe_service')
+        except RpcError:
+            pass
+
+    def retrieve_functions(self):
+        self.functions = []
+        try:
+            self.functions = self.client.rpc_call('__describe_functions')
+        except RpcError:
+            pass
+
+    def retrieve_custom_types(self):
+        self.custom_types = []
+        try:
+            self.custom_types = self.client.rpc_call('__describe_custom_types')
+        except RpcError:
+            pass
+
+    def connection_refused_error(self, exit=False):
+        print("Failed to connect to %s on TCP port %d" % (self.client.host, self.client.port))
+        if exit:
+            sys.exit(1)
 
     def do_help(self, line):
         if not line:
