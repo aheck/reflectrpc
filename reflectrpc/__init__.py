@@ -36,7 +36,7 @@ class JsonRpcParamError(JsonRpcInvalidRequest):
 
 class JsonRpcTypeError(JsonRpcInvalidRequest):
     def __init__(self, function_name, param_name, expected_type, real_type):
-        self.msg = "%s: Expected type '%s' of parameter '%s' but got value of type '%s'" % (function_name, expected_type, param_name, real_type)
+        self.msg = "%s: Expected value of type '%s' for parameter '%s' but got value of type '%s'" % (function_name, expected_type, param_name, real_type)
         self.name = 'TypeError'
 
 class JsonRpcInternalError(JsonRpcError):
