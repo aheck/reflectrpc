@@ -9,6 +9,8 @@ sys.path.append('..')
 from reflectrpc import RpcProcessor
 from reflectrpc import RpcFunction
 from reflectrpc import JsonRpcError
+from reflectrpc import JsonEnumType
+from reflectrpc import JsonHashType
 
 def test_function():
     return True
@@ -18,6 +20,9 @@ def echo(msg):
 
 def add(a, b):
     return int(a) + int(b)
+
+def echo_enum(a):
+    return a
 
 def echo_array(a):
     return a
@@ -141,6 +146,59 @@ class RpcProcessorTests(unittest.TestCase):
 
         reply = rpc.process_request('{"method": "add", "params": [4, {"test": 8}], "id": 3}')
         self.assertEqual(reply['error'], {'name': 'TypeError', 'message':'add: Expected value of type \'int\' for parameter \'b\' but got value of type \'hash\''})
+
+    def test_enum_types(self):
+        enum = JsonEnumType('PhoneType', 'Type of a phone number')
+        enum.add_value('HOME', 'Home phone')
+        enum.add_value('WORK', 'Work phone')
+        enum.add_value('MOBILE', 'Mobile phone')
+        enum.add_value('FAX', 'FAX number')
+
+        self.assertRaises(ValueError, enum.resolve_name, 5)
+        self.assertRaises(ValueError, enum.resolve_intvalue, 'String')
+
+        self.assertEqual(enum.resolve_name('HOME'), 0)
+        self.assertEqual(enum.resolve_name('WORK'), 1)
+        self.assertEqual(enum.resolve_name('MOBILE'), 2)
+        self.assertEqual(enum.resolve_name('FAX'), 3)
+        self.assertEqual(enum.resolve_name('SOMERANDOMSTRING'), None)
+
+        self.assertEqual(enum.resolve_intvalue(0), 'HOME')
+        self.assertEqual(enum.resolve_intvalue(1), 'WORK')
+        self.assertEqual(enum.resolve_intvalue(2), 'MOBILE')
+        self.assertEqual(enum.resolve_intvalue(3), 'FAX')
+        self.assertEqual(enum.resolve_intvalue(-1), None)
+        self.assertEqual(enum.resolve_intvalue(4), None)
+        self.assertEqual(enum.resolve_intvalue(5000), None)
+
+        self.assertRaises(ValueError, enum.resolve_to_intvalue, [])
+        self.assertRaises(ValueError, enum.resolve_to_name, [])
+
+        self.assertEqual(enum.resolve_to_intvalue(0), 0)
+        self.assertEqual(enum.resolve_to_intvalue('HOME'), 0)
+        self.assertEqual(enum.resolve_to_intvalue(1), 1)
+        self.assertEqual(enum.resolve_to_intvalue('WORK'), 1)
+        self.assertEqual(enum.resolve_to_intvalue(2), 2)
+        self.assertEqual(enum.resolve_to_intvalue('MOBILE'), 2)
+        self.assertEqual(enum.resolve_to_intvalue(3), 3)
+        self.assertEqual(enum.resolve_to_intvalue('FAX'), 3)
+        self.assertEqual(enum.resolve_to_intvalue(-1), None)
+        self.assertEqual(enum.resolve_to_intvalue(4), None)
+        self.assertEqual(enum.resolve_to_intvalue(5000), None)
+        self.assertEqual(enum.resolve_to_intvalue('SOMERANDOMSTR'), None)
+
+        self.assertEqual(enum.resolve_to_name(0), 'HOME')
+        self.assertEqual(enum.resolve_to_name('HOME'), 'HOME')
+        self.assertEqual(enum.resolve_to_name(1), 'WORK')
+        self.assertEqual(enum.resolve_to_name('WORK'), 'WORK')
+        self.assertEqual(enum.resolve_to_name(2), 'MOBILE')
+        self.assertEqual(enum.resolve_to_name('MOBILE'), 'MOBILE')
+        self.assertEqual(enum.resolve_to_name(3), 'FAX')
+        self.assertEqual(enum.resolve_to_name('FAX'), 'FAX')
+        self.assertEqual(enum.resolve_to_intvalue(-1), None)
+        self.assertEqual(enum.resolve_to_intvalue(4), None)
+        self.assertEqual(enum.resolve_to_intvalue(5000), None)
+        self.assertEqual(enum.resolve_to_intvalue('SOMERANDOMSTR'), None)
 
 
 if __name__ == '__main__':

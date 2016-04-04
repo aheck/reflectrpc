@@ -49,7 +49,8 @@ class JsonEnumType(object):
     Self-describing enum types
     """
     def __init__(self, name, description, start=0):
-        self.curvalue = start
+        self.startvalue = start
+        self.nextvalue = start
 
         if not name[0].isupper():
             raise ValueError("The Name of a custom type has to start with an upper-case letter")
@@ -64,12 +65,49 @@ class JsonEnumType(object):
 
         value['name'] = name
         value['description'] = description
-        value['intvalue'] = self.curvalue
-        self.curvalue += 1
+        value['intvalue'] = self.nextvalue
+        self.nextvalue += 1
 
         self.values.append(value)
 
-    def resolve(self, value):
+    def resolve_name(self, name):
+        if type(name).__name__ != 'str':
+            raise ValueError("'name' must be of type 'str'")
+
+        for v in self.values:
+            if v['name'] == name: return v['intvalue']
+
+        return None
+
+    def resolve_intvalue(self, intvalue):
+        if type(intvalue).__name__ != 'int':
+            raise ValueError("'intvalue' must be of type 'int'")
+
+        for v in self.values:
+            if v['intvalue'] == intvalue: return v['name']
+
+        return None
+
+    def resolve_to_name(self, value):
+        if type(value).__name__ == 'str':
+            if self.resolve_name(value) != None:
+                return value
+        elif type(value).__name__ == 'int':
+            return self.resolve_intvalue(value)
+        else:
+            raise ValueError("'value' must be either 'str' or 'int'")
+
+        return None
+
+    def resolve_to_intvalue(self, value):
+        if type(value).__name__ == 'str':
+            return self.resolve_name(value)
+        elif type(value).__name__ == 'int':
+            if value >= self.startvalue and value < self.nextvalue:
+                return value
+        else:
+            raise ValueError("'value' must be either 'str' or 'int'")
+
         return None
 
     def to_dict(self):
