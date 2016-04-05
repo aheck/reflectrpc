@@ -200,6 +200,43 @@ class RpcProcessorTests(unittest.TestCase):
         self.assertEqual(enum.resolve_to_intvalue(5000), None)
         self.assertEqual(enum.resolve_to_intvalue('SOMERANDOMSTR'), None)
 
+    def test_type_checks_for_enums(self):
+        rpc = RpcProcessor()
+
+        enum = JsonEnumType('PhoneType', 'Type of a phone number')
+        enum.add_value('HOME', 'Home phone')
+        enum.add_value('WORK', 'Work phone')
+        enum.add_value('MOBILE', 'Mobile phone')
+        enum.add_value('FAX', 'FAX number')
+
+        rpc.add_custom_type(enum)
+
+        echo_enum_func = RpcFunction(echo_enum, 'echo_enum', 'Returns what it was given',
+                'PhoneType', 'Same value as the first parameter')
+        echo_enum_func.add_param('PhoneType', 'type', 'Type of phone number')
+
+        rpc.add_function(echo_enum_func)
+
+        reply = rpc.process_request('{"method": "echo_enum", "params": [-1], "id": 1}')
+        self.assertEqual(reply['error'], {'name': 'TypeError',
+            'message':"echo_enum: '-1' is not a valid value for parameter 'type' of enum type 'PhoneType'"})
+
+        reply = rpc.process_request('{"method": "echo_enum", "params": [4], "id": 2}')
+        self.assertEqual(reply['error'], {'name': 'TypeError',
+            'message':"echo_enum: '4' is not a valid value for parameter 'type' of enum type 'PhoneType'"})
+
+        reply = rpc.process_request('{"method": "echo_enum", "params": ["BLABLA"], "id": 3}')
+        self.assertEqual(reply['error'], {'name': 'TypeError',
+            'message':"echo_enum: 'BLABLA' is not a valid value for parameter 'type' of enum type 'PhoneType'"})
+
+        reply = rpc.process_request('{"method": "echo_enum", "params": [3], "id": 4}')
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], 3)
+
+        reply = rpc.process_request('{"method": "echo_enum", "params": ["MOBILE"], "id": 5}')
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], 'MOBILE')
+
 
 if __name__ == '__main__':
     unittest.main()

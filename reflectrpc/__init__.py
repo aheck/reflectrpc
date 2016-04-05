@@ -35,6 +35,11 @@ class JsonRpcParamError(JsonRpcInvalidRequest):
         self.name = 'ParamError'
 
 class JsonRpcTypeError(JsonRpcInvalidRequest):
+    def __init__(self, msg):
+        self.msg = msg
+        self.name = 'TypeError'
+
+class JsonRpcParamTypeError(JsonRpcInvalidRequest):
     def __init__(self, function_name, param_name, expected_type, real_type):
         self.msg = "%s: Expected value of type '%s' for parameter '%s' but got value of type '%s'" % (function_name, expected_type, param_name, real_type)
         self.name = 'TypeError'
@@ -59,6 +64,14 @@ class JsonEnumType(object):
         self.typ = 'enum'
         self.description = description
         self.values = []
+
+    def validate(self, value):
+        result = self.resolve_to_intvalue(value)
+
+        if result == None:
+            return False
+
+        return True
 
     def add_value(self, name, description):
         value = {}
@@ -280,9 +293,26 @@ class RpcProcessor(object):
         i = 0
 
         for p in func.params:
-            if type(params[i]).__name__ != json2py[p['type']]:
-                real_type = py2json[type(params[i]).__name__]
-                raise JsonRpcTypeError(func.name, p['name'], p['type'], real_type)
+            typename = type(params[i]).__name__
+
+            # custom type?
+            if p['type'][0].isupper():
+                typeobj = self.custom_types_dict[p['type']]
+
+                if type(typeobj).__name__ == 'JsonEnumType':
+                    try:
+                        if not typeobj.validate(params[i]):
+                            raise JsonRpcTypeError("%s: '%s' is not a valid value for parameter '%s' of enum type '%s'"
+                                    % (func.name, str(params[i]), p['name'], p['type']))
+                    except ValueError:
+                        raise JsonRpcTypeError("%s: Enum parameter '%s' requires a value of type 'int' or 'string' but type was '%s'"
+                                % (func.name, p['name'], py2json[typename]))
+                elif type(typeobj).__name__ == 'JsonHashType':
+                    if py2json[typename] != 'hash':
+                        raise JsonRpcParamTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'"
+                                % (func.name, p['name'], p['type'], py2json[typename]))
+            elif typename != json2py[p['type']]:
+                raise JsonRpcParamTypeError(func.name, p['name'], p['type'], py2json[typename])
 
             i += 1
 
