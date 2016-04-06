@@ -9,7 +9,25 @@ import traceback
 json_types = ['int', 'bool', 'float', 'string', 'array', 'hash', 'base64']
 
 class JsonRpcError(Exception):
+    """
+    Generic JSON-RPC error class
+
+    All exceptions that are to be serialized and sent back to the user over
+    JSON-RPC have to derive from this class. All exceptions not derived from
+    this class will be suppressed for security reasons.
+
+    Example:
+        The JSON representation of this error looks like this::
+
+            {"name": "JsonRpcError", "message": "Your error message"}
+    """
     def __init__(self, msg):
+        """
+        Constructor
+
+        Args:
+            msg (str): Error message
+        """
         self.msg = msg
         self.name = type(self).__name__
 
@@ -17,6 +35,12 @@ class JsonRpcError(Exception):
         return '%s: %s' % (self.name, self.msg)
 
     def to_dict(self):
+        """
+        Convert the error to a dictionary
+
+        Returns:
+            dict: Dictionary representing this error
+        """
         error = {}
 
         error['name'] = self.name
@@ -25,26 +49,99 @@ class JsonRpcError(Exception):
         return error
 
 class JsonRpcInvalidRequest(JsonRpcError):
+    """
+    JSON-RPC error class for invalid requests
+
+    Example:
+        The JSON representation of this error looks like this::
+
+            {"name": "InvalidRequest", "message": "Your error message"}
+    """
     def __init__(self, msg):
+        """
+        Constructor
+
+        Args:
+            msg (str): Error message
+        """
         self.msg = msg
         self.name = 'InvalidRequest'
 
 class JsonRpcParamError(JsonRpcInvalidRequest):
+    """
+    JSON-RPC error class for requests with wrong number of parameters
+
+    Example:
+        The JSON representation of this error looks like this::
+
+            {"name": "ParamError", "message": "Expected [expected_count] parameters for '[function_name]' but got [real_count]""}
+    """
     def __init__(self, function_name, expected_count, real_count):
+        """
+        Constructor
+
+        Args:
+            function_name (str): Name of the function the user tried to call
+            expected_count (int): Expected number of parameters
+            real_count (int): Number of parameters actually received
+        """
         self.msg = "Expected %d parameters for '%s' but got %d" % (expected_count, function_name, real_count)
         self.name = 'ParamError'
 
 class JsonRpcTypeError(JsonRpcInvalidRequest):
+    """
+    Generic JSON-RPC error class for requests with parameters of invalid type
+
+    Example:
+        The JSON representation of this error looks like this::
+
+            {"name": "TypeError", "message": "Your error message"}
+    """
     def __init__(self, msg):
+        """
+        Constructor
+
+        Args:
+            msg (str): Error message
+        """
         self.msg = msg
         self.name = 'TypeError'
 
 class JsonRpcParamTypeError(JsonRpcInvalidRequest):
+    """
+    JSON-RPC error class for requests with parameters of invalid type
+
+    Example:
+        The JSON representation of this error looks like this::
+
+            {"name": "TypeError", "message": "[function_name]: Expected value of type '[param_name]' for parameter '[expected_type]' but got value of type '[real_type]'"}
+    """
     def __init__(self, function_name, param_name, expected_type, real_type):
+        """
+        Constructor
+
+        Args:
+            function_name (str): Name of the function the user tried to call
+            param_name (str): Name of the parameter
+            expected_type (str): Name of the type this parameter expects
+            real_type (str): Type of the value the user actually passed
+        """
         self.msg = "%s: Expected value of type '%s' for parameter '%s' but got value of type '%s'" % (function_name, expected_type, param_name, real_type)
         self.name = 'TypeError'
 
 class JsonRpcInternalError(JsonRpcError):
+    """
+    JSON-RPC error class for internal errors
+
+    This error is used when the details of the error are to be hidden from the
+    user for security reasons (e.g. when an exception is raised which is not
+    derived from JsonRpcError).
+
+    Example:
+        The JSON representation of this error looks like this::
+
+            {"name": "InternalError", "message": "Your error message"}
+    """
     def __init__(self, msg):
         self.msg = msg
         self.name = 'InternalError'
@@ -52,8 +149,23 @@ class JsonRpcInternalError(JsonRpcError):
 class JsonEnumType(object):
     """
     Self-describing enum types
+
+    An enum is a list of named integers. Translation between integer value and
+    string names is supported by this class as well as validation of integer
+    and string values to check if they are valid values of an enum.
     """
     def __init__(self, name, description, start=0):
+        """
+        Constructor
+
+        Args:
+            name (str): Name of the enum type, has to start with an upper-case letter
+            description (str): Description of this enum type
+            start (int): enum integer values are assigned starting from this value
+
+        Raises:
+            ValueError: If name doesn't start with an upper-case letter
+        """
         self.startvalue = start
         self.nextvalue = start
 
@@ -66,6 +178,15 @@ class JsonEnumType(object):
         self.values = []
 
     def validate(self, value):
+        """
+        Check if a string or integer value is a valid value for this enum
+
+        Args:
+            value (int|str): Value to check
+
+        Returns:
+            bool: True if value is valid, False if not
+        """
         result = self.resolve_to_intvalue(value)
 
         if result == None:
@@ -74,6 +195,13 @@ class JsonEnumType(object):
         return True
 
     def add_value(self, name, description):
+        """
+        Add a new value to the enum
+
+        Args:
+            name (str): String name of the value
+            description (str): Description of this value
+        """
         value = {}
 
         value['name'] = name
@@ -84,6 +212,19 @@ class JsonEnumType(object):
         self.values.append(value)
 
     def resolve_name(self, name):
+        """
+        Resolves a string name to its integer value
+
+        Args:
+            name (str): String name of a value
+
+        Returns:
+            int: Integer value of name on success
+            None: If name is not a valid value for this enum
+
+        Raises:
+            ValueError: If name is not a string
+        """
         if type(name).__name__ != 'str':
             raise ValueError("'name' must be of type 'str'")
 
@@ -93,6 +234,19 @@ class JsonEnumType(object):
         return None
 
     def resolve_intvalue(self, intvalue):
+        """
+        Resolves an integer value to its string name
+
+        Args:
+            intvalue (int): Integer value to resolve
+
+        Returns:
+            str: Name of intvalue on success
+            None: If intvalue is not a valid value for this enum
+
+        Raises:
+            ValueError: If intvalue is not an integer
+        """
         if type(intvalue).__name__ != 'int':
             raise ValueError("'intvalue' must be of type 'int'")
 
@@ -102,6 +256,19 @@ class JsonEnumType(object):
         return None
 
     def resolve_to_name(self, value):
+        """
+        Resolves an integer value or string name to the corresponding string name
+
+        Args:
+            value (int|str): Integer value or string name
+
+        Returns:
+            str: String name if value is a valid enum value
+            None: If value is not a valid enum value
+
+        Raises:
+            ValueError: If value is neither interger or string
+        """
         if type(value).__name__ == 'str':
             if self.resolve_name(value) != None:
                 return value
@@ -113,6 +280,19 @@ class JsonEnumType(object):
         return None
 
     def resolve_to_intvalue(self, value):
+        """
+        Resolves an integer value or string name to the corresponding integer value
+
+        Args:
+            value (int|str): Integer value or string name
+
+        Returns:
+            int: Integer value if value is a valid enum value
+            None: If value is not a valid enum value
+
+        Raises:
+            ValueError: If value is neither interger or string
+        """
         if type(value).__name__ == 'str':
             return self.resolve_name(value)
         elif type(value).__name__ == 'int':
@@ -124,6 +304,12 @@ class JsonEnumType(object):
         return None
 
     def to_dict(self):
+        """
+        Convert the enum to a dictionary
+
+        Returns:
+            dict: Dictionary representing this enum type
+        """
         d = {}
 
         d['name'] = self.name
@@ -135,9 +321,21 @@ class JsonEnumType(object):
 
 class JsonHashType(object):
     """
-    Self-describing hashes
+    Self-describing named hashes
+
+    A named hash is a hash with a description of its members and their types
     """
     def __init__(self, name, description):
+        """
+        Constructor
+
+        Args:
+            name (str): Name of the hash type to be defined. Must start with an upper-case letter
+            description (str): Description of this named hash type
+
+        Raises:
+            ValueError: If name does not start with an upper-case letter
+        """
         if not name[0].isupper():
             raise ValueError("The Name of a custom type has to start with an upper-case letter")
 
@@ -147,6 +345,17 @@ class JsonHashType(object):
         self.fields = []
 
     def add_field(self, name, typ, description):
+        """
+        Add a new field to the named hash
+
+        Args:
+            name (str): Name of the field
+            typ (str): Type of the field (JSON type or enum or named hash)
+            description (str): Description of this field
+
+        Raises:
+            ValueError: If typ is not a valid type
+        """
         if not typ in json_types and not result_type[0].isupper():
             raise ValueError("Invalid JSON-RPC type: %s" % (typ))
 
@@ -159,6 +368,12 @@ class JsonHashType(object):
         self.fields.append(field)
 
     def to_dict(self):
+        """
+        Convert the named hash to a dictionary
+
+        Returns:
+            dict: Dictionary representing this enum type
+        """
         d = {}
 
         d['name'] = self.name
@@ -171,9 +386,22 @@ class JsonHashType(object):
 
 class RpcFunction(object):
     """
-    Description of a function exposed as RPC
+    Description of a function exposed as Remote Procedure Call
     """
     def __init__(self, func, name, description, result_type, result_desc):
+        """
+        Constructor
+
+        Args:
+            func (Callable): A callable to be exposed as RPC
+            name (str): Function name under which to expose func
+            description (str): Description of the function
+            result_type (str): Type of the return value
+            result_desc (str): Description of the return value
+
+        Raises:
+            ValueError: If result_type is an invalid type or func is not a callable
+        """
         if not result_type in json_types and not result_type[0].isupper():
             raise ValueError("Invalid JSON-RPC type: %s" % (result_type))
 
@@ -191,6 +419,17 @@ class RpcFunction(object):
         self.type_checks_enabled = True
 
     def add_param(self, typ, name, description):
+        """
+        Add a parameter to the function description
+
+        Args:
+            typ (str): Type of the parameter
+            name (str): Name of the parameter
+            description (str): Description of the parameter
+
+        Raises:
+            ValueError: If typ is not a valid type
+        """
         if not typ in json_types and not typ[0].isupper():
             raise ValueError("Invalid JSON-RPC type: %s" % (typ))
 
@@ -198,6 +437,12 @@ class RpcFunction(object):
         self.params.append(param)
 
     def to_dict(self):
+        """
+        Convert the function description to a dictionary
+
+        Returns:
+            dict: Dictionary representing this error
+        """
         d = {}
 
         d['name'] = self.name
@@ -222,9 +467,12 @@ class RpcFunction(object):
 
 class RpcProcessor(object):
     """
-    A JSON-RPC server that is capable of describing all its RPC functions to the client
+    A JSON-RPC server that is capable of describing all of its RPC functions to the client
     """
     def __init__(self):
+        """
+        Constructor
+        """
         self.functions = []
         self.functions_dict = {}
 
@@ -239,6 +487,15 @@ class RpcProcessor(object):
         self.builtins['__describe_custom_types'] = self.describe_custom_types
 
     def add_custom_type(self, custom_type):
+        """
+        Make a custom type (enum or named hash) known to the RpcProcessor
+
+        Args:
+            custom_type (JsonEnumType|JsonHashType): Enum or named hash
+
+        Raises:
+            ValueError: If custom_type is neither a JsonEnumType nor a JsonHashType or custom_type is already registered
+        """
         if type(custom_type) != JsonEnumType and type(custom_type) != JsonHashType:
             raise ValueError("Custom type must be of class JsonEnumType or JsonHashType")
 
@@ -250,6 +507,15 @@ class RpcProcessor(object):
         self.custom_types_dict[custom_type.name] = custom_type
 
     def add_function(self, func):
+        """
+        Add a new RPC function to the RpcProcessor
+
+        Args:
+            func (RpcFunction): Description object for the new function
+
+        Raises:
+            ValueError: If a function of this name is already registered or unknown types are referenced in func
+        """
         if func.name in self.functions_dict:
             raise ValueError("Another function of the name '%s' is already registered" % (func.name))
 
@@ -266,21 +532,50 @@ class RpcProcessor(object):
         self.functions_dict[func.name] = func
 
     def describe_service(self):
+        """
+        Return the self-description of this RPC service
+
+        Returns:
+            str: Description of this service
+        """
         return self.description
 
     def describe_functions(self):
+        """
+        Describe the functions exposed by this RPC service
+
+        Returns:
+            list: Description of all functions registered to this RpcProcessor
+        """
         return [function.to_dict() for function in self.functions]
 
     def describe_custom_types(self):
+        """
+        Describe the custom types exposed by this RPC service
+
+        Returns:
+            list: Description of all custom types registered to this RpcProcessor
+        """
         return [custom_type.to_dict() for custom_type in self.custom_types]
 
     def call_function(self, name, func, func_desc, *params):
         """
-        Executes the actual function. Can be overridden for concurrent execution e.g.
+        Execute the actual function
         """
         return func(*params)
 
     def check_request_types(self, func, params):
+        """
+        Check the types of the parameters passed by a JSON-RPC call
+
+        Args:
+            func (RpcFunction): Description of the called function
+            params (list): Parameters passed in the request
+
+        Raises:
+            JsonRpcTypeError: If a parameter type is invalid
+            JsonRpcParamTypeError: If a parameter type is invalid
+        """
         if len(params) != len(func.params):
             raise JsonRpcParamError(func.name, len(func.params), len(params))
 
@@ -317,6 +612,20 @@ class RpcProcessor(object):
             i += 1
 
     def process_request(self, message):
+        """
+        Process a JSON-RPC request
+
+        Validates the JSON-RPC request and executes the RPC function in case the
+        request is valid. Errors are reported to the user. Exceptions that are
+        not derived from JsonRpcError are reported as internal errors with no
+        further explanation for security reasons.
+
+        Args:
+            message (str): The JSON-RPC request sent by the client
+
+        Returns:
+            dict: JSON-RPC reply for the client
+        """
         reply = {}
         request = {}
 
@@ -402,6 +711,9 @@ class RpcProcessor(object):
             return reply
 
 class RpcError(Exception):
+    """
+    JSON-RPC error object as received by the client
+    """
     def __init__(self, msg):
         self.msg = msg
 

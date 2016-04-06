@@ -28,7 +28,7 @@ class AbstractJsonRpcServer(metaclass=ABCMeta):
                 self.buf = lines[0]
 
     """
-    Abstract method you must overwrite to send a reply back to the client
+    Abstract method you must override to send a reply back to the client
     """
     @abstractmethod
     def send_data(self, data):

@@ -8,21 +8,35 @@ import socket
 import reflectrpc.server
 
 class JsonRpcServer(reflectrpc.server.AbstractJsonRpcServer):
+    """
+    Blocking socket implementation of AbstractJsonRpcServer
+    """
     def send_data(self, data):
         self.conn.sendall(data)
 
 class SimpleJsonRpcServer(object):
     """
-    Simple JSON-RPC server
+    Simple JSON-RPC server for line-terminated messages
 
     Not a production quality server, handles only one connection at a time.
     """
-    def __init__(self, processor, host, port):
-        self.jsonrpc = processor
+    def __init__(self, rpcprocessor, host, port):
+        """
+        Constructor
+
+        Args:
+            rpcprocessor (RpcProcessor): RPC implementation
+            host (str): Hostname or IP to listen on
+            port (int): TCP port to listen on
+        """
+        self.jsonrpc = rpcprocessor
         self.host = host
         self.port = port
 
     def run(self):
+        """
+        Start the server and listen on host:port
+        """
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -37,9 +51,12 @@ class SimpleJsonRpcServer(object):
         while 1:
             conn, addr = self.socket.accept()
             self.server = JsonRpcServer(self.jsonrpc, conn)
-            self.handle_connection(conn)
+            self.__handle_connection(conn)
 
-    def handle_connection(self, conn):
+    def __handle_connection(self, conn):
+        """
+        Serve a single client connection
+        """
         data = conn.recv(4096)
 
         while data:
