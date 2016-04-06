@@ -92,6 +92,7 @@ class RpcProcessorTests(unittest.TestCase):
         rpc.add_function(error_func)
 
         reply = rpc.process_request('{"method": "internal_error", "params": [], "id": 1}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'InternalError', 'message': 'Internal error'})
 
     def test_json_exception(self):
@@ -102,6 +103,7 @@ class RpcProcessorTests(unittest.TestCase):
         rpc.add_function(error_func)
 
         reply = rpc.process_request('{"method": "json_error", "params": [], "id": 1}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'JsonRpcError', 'message': 'User error'})
 
     def test_wrong_number_of_params(self):
@@ -114,9 +116,11 @@ class RpcProcessorTests(unittest.TestCase):
         rpc.add_function(echo_func)
 
         reply = rpc.process_request('{"method": "echo", "params": ["Hello Server", 42], "id": 1}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'ParamError', 'message': 'Expected 1 parameters for \'echo\' but got 2'})
 
         reply = rpc.process_request('{"method": "echo", "params": [], "id": 2}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'ParamError', 'message': 'Expected 1 parameters for \'echo\' but got 0'})
 
     def test_type_checks(self):
@@ -136,15 +140,19 @@ class RpcProcessorTests(unittest.TestCase):
         rpc.add_function(add_func)
 
         reply = rpc.process_request('{"method": "echo", "params": [42], "id": 1}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'TypeError', 'message':'echo: Expected value of type \'string\' for parameter \'message\' but got value of type \'int\''})
 
         reply = rpc.process_request('{"method": "echo", "params": [[]], "id": 2}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'TypeError', 'message':'echo: Expected value of type \'string\' for parameter \'message\' but got value of type \'array\''})
 
         reply = rpc.process_request('{"method": "add", "params": [4, 8.9], "id": 3}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'TypeError', 'message':'add: Expected value of type \'int\' for parameter \'b\' but got value of type \'float\''})
 
         reply = rpc.process_request('{"method": "add", "params": [4, {"test": 8}], "id": 3}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'TypeError', 'message':'add: Expected value of type \'int\' for parameter \'b\' but got value of type \'hash\''})
 
     def test_enum_types(self):
@@ -218,14 +226,17 @@ class RpcProcessorTests(unittest.TestCase):
         rpc.add_function(echo_enum_func)
 
         reply = rpc.process_request('{"method": "echo_enum", "params": [-1], "id": 1}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'TypeError',
             'message':"echo_enum: '-1' is not a valid value for parameter 'type' of enum type 'PhoneType'"})
 
         reply = rpc.process_request('{"method": "echo_enum", "params": [4], "id": 2}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'TypeError',
             'message':"echo_enum: '4' is not a valid value for parameter 'type' of enum type 'PhoneType'"})
 
         reply = rpc.process_request('{"method": "echo_enum", "params": ["BLABLA"], "id": 3}')
+        self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'TypeError',
             'message':"echo_enum: 'BLABLA' is not a valid value for parameter 'type' of enum type 'PhoneType'"})
 
@@ -236,6 +247,34 @@ class RpcProcessorTests(unittest.TestCase):
         reply = rpc.process_request('{"method": "echo_enum", "params": ["MOBILE"], "id": 5}')
         self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], 'MOBILE')
+
+    def test_type_checks_for_named_hashes(self):
+        rpc = RpcProcessor()
+
+        address_type = JsonHashType('Address', 'Street address')
+        address_type.add_field('firstname', 'string', 'First name')
+        address_type.add_field('lastname', 'string', 'Last name')
+        address_type.add_field('street1', 'string', 'First address line')
+        address_type.add_field('street2', 'string', 'Second address line')
+        address_type.add_field('zipcode', 'string', 'Zip code')
+        address_type.add_field('city', 'string', 'City')
+
+        rpc.add_custom_type(address_type)
+
+        echo_hash_func = RpcFunction(echo_hash, 'echo_hash', 'Returns what it was given',
+                'hash', 'Same value as the first parameter')
+        echo_hash_func.add_param('Address', 'address', 'Address hash')
+
+        rpc.add_function(echo_hash_func)
+
+        reply = rpc.process_request('{"method": "echo_hash", "params": ["String"], "id": 1}')
+        self.assertEqual(reply['result'], None)
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message':
+            "echo_hash: Named hash parameter 'address' of type 'Address' requires a hash value but got 'string'"})
+
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"name": "test", "number": 42}], "id": 2}')
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], {'name': 'test', 'number': 42})
 
 
 if __name__ == '__main__':

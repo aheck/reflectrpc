@@ -309,7 +309,7 @@ class RpcProcessor(object):
                                 % (func.name, p['name'], py2json[typename]))
                 elif type(typeobj).__name__ == 'JsonHashType':
                     if py2json[typename] != 'hash':
-                        raise JsonRpcParamTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'"
+                        raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'"
                                 % (func.name, p['name'], p['type'], py2json[typename]))
             elif typename != json2py[p['type']]:
                 raise JsonRpcParamTypeError(func.name, p['name'], p['type'], py2json[typename])
