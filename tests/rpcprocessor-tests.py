@@ -276,6 +276,72 @@ class RpcProcessorTests(unittest.TestCase):
         self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], {'name': 'test', 'number': 42})
 
+    def test_enum_type_check_in_add_function(self):
+        rpc = RpcProcessor()
+
+        echo_enum_func = RpcFunction(echo_enum, 'echo_enum', '', 'PhoneType', '')
+        self.assertRaises(ValueError, rpc.add_function, echo_enum_func)
+
+        echo_enum_func = RpcFunction(echo_enum, 'echo_enum', '', 'int', '')
+        echo_enum_func.add_param('PhoneType', 'phonetype', '')
+        self.assertRaises(ValueError, rpc.add_function, echo_enum_func)
+
+        rpc = RpcProcessor()
+
+        echo_enum_func = RpcFunction(echo_enum, 'echo_enum', '', 'PhoneType', '')
+        enum = JsonEnumType('PhoneType', 'Type of a phone number')
+        rpc.add_custom_type(enum)
+
+        try:
+            rpc.add_function(echo_enum_func)
+        except ValueError:
+            self.fail("add_function raised unexpected exception!")
+
+        rpc = RpcProcessor()
+
+        echo_enum_func = RpcFunction(echo_enum, 'echo_enum', '', 'int', '')
+        echo_enum_func.add_param('PhoneType', 'phonetype', '')
+        enum = JsonEnumType('PhoneType', 'Type of a phone number')
+        rpc.add_custom_type(enum)
+
+        try:
+            rpc.add_function(echo_enum_func)
+        except ValueError:
+            self.fail("add_function raised unexpected exception!")
+
+    def test_hash_type_check_in_add_function(self):
+        rpc = RpcProcessor()
+
+        echo_hash_func = RpcFunction(echo_hash, 'echo_hash', '', 'Address', '')
+        self.assertRaises(ValueError, rpc.add_function, echo_hash_func)
+
+        echo_hash_func = RpcFunction(echo_hash, 'echo_hash', '', 'hash', '')
+        echo_hash_func.add_param('Address', 'address', '')
+        self.assertRaises(ValueError, rpc.add_function, echo_hash_func)
+
+        rpc = RpcProcessor()
+
+        echo_hash_func = RpcFunction(echo_hash, 'echo_hash', '', 'Address', '')
+        address = JsonHashType('Address', '')
+        rpc.add_custom_type(address)
+
+        try:
+            rpc.add_function(echo_hash_func)
+        except ValueError:
+            self.fail("add_function raised unexpected exception!")
+
+        rpc = RpcProcessor()
+
+        echo_hash_func = RpcFunction(echo_hash, 'echo_hash', '', 'hash', '')
+        echo_hash_func.add_param('Address', 'address', '')
+        address = JsonHashType('Address', '')
+        rpc.add_custom_type(address)
+
+        try:
+            rpc.add_function(echo_hash_func)
+        except ValueError:
+            self.fail("add_function raised unexpected exception!")
+
 
 if __name__ == '__main__':
     unittest.main()
