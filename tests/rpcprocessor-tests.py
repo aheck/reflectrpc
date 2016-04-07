@@ -24,6 +24,12 @@ def add(a, b):
 def echo_enum(a):
     return a
 
+notify_was_called = False
+
+def notify():
+    global notify_was_called
+    notify_was_called = True
+
 def echo_array(a):
     return a
 
@@ -72,6 +78,20 @@ class RpcProcessorTests(unittest.TestCase):
         reply = rpc.process_request('{"method": "add", "params": [4, 5], "id": 1}')
         self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], 9)
+
+    def test_notification(self):
+        global notify_was_called
+
+        rpc = RpcProcessor()
+
+        notify_func = RpcFunction(notify, 'notify', 'Notification function',
+                'bool', 'Does not return because it is a notification')
+
+        rpc.add_function(notify_func)
+        self.assertFalse(notify_was_called)
+        reply = rpc.process_request('{"method": "notify", "params": [], "id": null}')
+        self.assertEqual(None, reply)
+        self.assertTrue(notify_was_called)
 
     def test_double_register_of_function(self):
         rpc = RpcProcessor()

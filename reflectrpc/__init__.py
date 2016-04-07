@@ -630,6 +630,8 @@ class RpcProcessor(object):
         request = {}
 
         reply['result'] = None
+        # Notification requests expect no answer
+        notify_request = False
 
         try:
             request = json.loads(message)
@@ -645,13 +647,10 @@ class RpcProcessor(object):
             reply['error'] = error.to_dict()
             return reply
 
-        if not isinstance(request['id'], int):
-            reply['id'] = -1
-            error = JsonRpcInvalidRequest("Field 'id' must contain an integer value")
-            reply['error'] = error.to_dict()
-            return reply
-
-        reply['id'] = request['id']
+        if request['id'] == None:
+            notify_request = True
+        else:
+            reply['id'] = request['id']
 
         if not 'method' in request.keys():
             error = JsonRpcInvalidRequest("Field 'method' missing in request")
@@ -689,6 +688,16 @@ class RpcProcessor(object):
             func = func_desc.func
 
             try:
+                if notify_request:
+                    try:
+                        if func_desc.type_checks_enabled:
+                            self.check_request_types(func_desc, request['params'])
+                        self.call_function(func_desc.name, func, func_desc, *request['params'])
+                    except Exception as e:
+                        traceback.print_exc()
+
+                    return None
+
                 if func_desc.type_checks_enabled:
                     self.check_request_types(func_desc, request['params'])
 

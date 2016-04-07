@@ -20,8 +20,13 @@ class AbstractJsonRpcServer(metaclass=ABCMeta):
 
             for i in range(count):
                 line = lines.pop(0)
-                reply_line = json.dumps(self.jsonrpc.process_request(line)) + "\r\n"
-                self.send_data(reply_line.encode("utf-8"))
+                reply = self.jsonrpc.process_request(line)
+
+                # in case of a notification request process_request returns None
+                # and we send no reply back
+                if reply:
+                    reply_line = json.dumps(reply) + "\r\n"
+                    self.send_data(reply_line.encode("utf-8"))
 
             self.buf = ''
             if lines:
