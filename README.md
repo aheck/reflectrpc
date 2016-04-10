@@ -176,7 +176,7 @@ a controlled manner but internal errors are hidden from the client.
 
 ## License ##
 
-ReflectRPC is licensed under the very liberal MIT license
+ReflectRPC is licensed under the MIT license
 
 ## Contact ##
 

@@ -730,7 +730,17 @@ class RpcError(Exception):
         return "ERROR: " + str(self.msg)
 
 class RpcClient(object):
+    """
+    Client for the JSON-RPC 1.0 protocol
+    """
     def __init__(self, host, port):
+        """
+        Constructor
+
+        Args:
+            host (str): Hostname or IP address to connect to
+            port (int): TCP port to connect to
+        """
         self.host = host
         self.port = port
 
@@ -738,6 +748,16 @@ class RpcClient(object):
         self.recv_buf = ''
 
     def build_rpc_call(self, method, *params):
+        """
+        Builds a JSON-RPC request dictionary
+
+        Args:
+            method (str): Name of the RPC method
+            params (list): Parameters for the RPC method
+
+        Returns:
+            dict: Request dictionary
+        """
         request = {}
         request['id'] = self.req_id
         self.req_id = self.req_id + 1
@@ -746,12 +766,50 @@ class RpcClient(object):
 
         return request
 
-    def rpc_call_raw(self, json_data):
+    def build_rpc_notify(self, method, *params):
+        """
+        Builds a JSON-RPC notify request dictionary
+
+        Args:
+            method (str): Name of the notify method
+            params (list): Parameters for the notify method
+
+        Returns:
+            dict: Request dictionary
+        """
+        request = {}
+        request['id'] = None
+        request['method'] = method
+        request['params'] = params
+
+        return request
+
+    def rpc_call_raw(self, json_data, send_only=False):
+        """
+        Send a raw JSON request to the server
+
+        This method does not validate the input JSON. Also you have to make sure
+        that if you send a request where the "id" parameter has the value "null"
+        the parameter send_only must be True. Otherwise the client will block
+        indefinitely because the server sees it as a notify request and does not
+        send an answer.
+
+        Args:
+            json_data (str): The JSON that is sent to the server as is
+            send_only (bool): Only send the request, don't try to read a response
+
+        Returns:
+            str: The response string as returned by the server
+            None: If send_only is True
+        """
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((self.host, self.port))
 
         json_data += "\n"
         sock.sendall(json_data.encode('utf-8'))
+
+        if send_only:
+            return
 
         data = sock.recv(4096)
         self.recv_buf += data.decode('utf-8')
@@ -767,6 +825,21 @@ class RpcClient(object):
         return json_reply
 
     def rpc_call(self, method, *params):
+        """
+        Call a RPC function on the server
+
+        This function returns the server response or raises an error
+
+        Args:
+            method (str): The name of the RPC method to call on the server
+            params (list): The parameters to pass to the RPC method
+
+        Returns:
+            JSON type: The value returned by the server
+
+        Raises:
+            RpcError: Generic exception to encapsulate all errors
+        """
         json_data = json.dumps(self.build_rpc_call(method, *params))
 
         json_reply = self.rpc_call_raw(json_data)
@@ -777,3 +850,15 @@ class RpcClient(object):
             raise RpcError(reply['error'])
 
         return reply['result']
+
+    def rpc_notify(self, method, *params):
+        """
+        Call a RPC function on the server but tell it to send no response
+
+        Args:
+            method (str): The name of the RPC method to call on the server
+            params (list): The parameters to pass to the RPC method
+        """
+
+        json_data = json.dumps(self.build_rpc_call(method, *params))
+        self.rpc_call_raw(json_data, True)

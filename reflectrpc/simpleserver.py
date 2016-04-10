@@ -51,7 +51,11 @@ class SimpleJsonRpcServer(object):
         while 1:
             conn, addr = self.socket.accept()
             self.server = JsonRpcServer(self.jsonrpc, conn)
-            self.__handle_connection(conn)
+
+            try:
+                self.__handle_connection(conn)
+            except ConnectionResetError:
+                pass
 
     def __handle_connection(self, conn):
         """

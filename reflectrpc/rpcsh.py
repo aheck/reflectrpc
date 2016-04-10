@@ -144,13 +144,14 @@ class ReflectRpcShell(Cmd):
 
     def do_help(self, line):
         if not line:
-            print("list - List all RPC functions advertised by the server")
-            print("doc  - Shows the documentation of a RPC function")
-            print("type - Shows the documentation of a custom RPC type")
-            print("exec - Execute RPC call")
-            print("raw  - Directly send a raw JSON-RPC message to the server")
-            print("quit - Quit this program")
-            print("help - Print this message. 'help [command]' prints a\n       detailed help message for a command")
+            print("list   - List all RPC functions advertised by the server")
+            print("doc    - Shows the documentation of a RPC function")
+            print("type   - Shows the documentation of a custom RPC type")
+            print("exec   - Execute RPC call")
+            print("notify - Execute RPC call but tell server to send no response")
+            print("raw    - Directly send a raw JSON-RPC message to the server")
+            print("quit   - Quit this program")
+            print("help   - Print this message. 'help [command]' prints a\n       detailed help message for a command")
             return
 
         if line == 'exec':
@@ -194,6 +195,15 @@ class ReflectRpcShell(Cmd):
             print("Server replied:", self.client.rpc_call(method, *tokens))
         except reflectrpc.RpcError as e:
             print(e)
+
+    def do_notify(self, line):
+        tokens = split_exec_line(line)
+
+        if not tokens:
+            return
+
+        method = tokens.pop(0)
+        self.client.rpc_notify(method, *tokens)
 
     def do_raw(self, line):
         print(self.client.rpc_call_raw(line))

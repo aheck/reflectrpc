@@ -15,6 +15,9 @@ def mul(a, b):
 def div(a, b):
     return float(a) / float(b)
 
+def notify(value):
+    print("Notify: %s" % (value))
+
 def enum_echo(phone_type):
     return phone_type_enum.resolve(phone_type)
 
@@ -81,5 +84,10 @@ def build_example_rpcservice():
             'hash', 'Address hash')
     hash_echo_func.add_param('Address', 'address', 'Address hash')
     jsonrpc.add_function(hash_echo_func)
+
+    notify_func = reflectrpc.RpcFunction(notify, 'notify', 'Test function for notify requests',
+            'bool', '')
+    notify_func.add_param('string', 'value', 'A value to print on the server side')
+    jsonrpc.add_function(notify_func)
 
     return jsonrpc
