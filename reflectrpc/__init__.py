@@ -1,4 +1,5 @@
-from builtins import str
+from __future__ import unicode_literals
+from builtins import bytes, dict, list, int, float, str
 
 import os
 import sys
@@ -7,6 +8,9 @@ import socket
 import traceback
 
 json_types = ['int', 'bool', 'float', 'string', 'array', 'hash', 'base64']
+
+def isstring(value):
+    return type(value).__name__ in ['str', 'unicode']
 
 class JsonRpcError(Exception):
     """
@@ -225,8 +229,8 @@ class JsonEnumType(object):
         Raises:
             ValueError: If name is not a string
         """
-        if type(name).__name__ != 'str':
-            raise ValueError("'name' must be of type 'str'")
+        if not isstring(name):
+            raise ValueError("'name' must be a string but is '%s'" % (type(name).__name__))
 
         for v in self.values:
             if v['name'] == name: return v['intvalue']
@@ -269,13 +273,13 @@ class JsonEnumType(object):
         Raises:
             ValueError: If value is neither interger or string
         """
-        if type(value).__name__ == 'str':
+        if isstring(value):
             if self.resolve_name(value) != None:
                 return value
         elif type(value).__name__ == 'int':
             return self.resolve_intvalue(value)
         else:
-            raise ValueError("'value' must be either 'str' or 'int'")
+            raise ValueError("'value' must be either string or int")
 
         return None
 
@@ -293,13 +297,13 @@ class JsonEnumType(object):
         Raises:
             ValueError: If value is neither interger or string
         """
-        if type(value).__name__ == 'str':
+        if isstring(value):
             return self.resolve_name(value)
         elif type(value).__name__ == 'int':
             if value >= self.startvalue and value < self.nextvalue:
                 return value
         else:
-            raise ValueError("'value' must be either 'str' or 'int'")
+            raise ValueError("'value' must be either string or int")
 
         return None
 
@@ -590,6 +594,10 @@ class RpcProcessor(object):
         for p in func.params:
             typename = type(params[i]).__name__
 
+            # workaround for Python 2.7
+            if typename == 'unicode':
+                typename = 'str'
+
             # custom type?
             if p['type'][0].isupper():
                 typeobj = self.custom_types_dict[p['type']]
@@ -700,6 +708,14 @@ class RpcProcessor(object):
 
                 if func_desc.type_checks_enabled:
                     self.check_request_types(func_desc, request['params'])
+
+                if notify_request:
+                    try:
+                        self.call_function(func_desc.name, func, func_desc, *request['params'])
+                    except:
+                        pass
+
+                    return None
 
                 reply['result'] = self.call_function(func_desc.name, func,
                         func_desc, *request['params'])

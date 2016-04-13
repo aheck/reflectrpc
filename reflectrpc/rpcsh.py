@@ -1,3 +1,6 @@
+from __future__ import unicode_literals
+from builtins import bytes, dict, list, int, float, str
+
 import json
 import sys
 

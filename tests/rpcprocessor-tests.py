@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+from __future__ import unicode_literals
+from builtins import bytes, dict, list, int, float, str
+
 import sys
 import json
 import unittest

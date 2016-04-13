@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
 import os
+import sys
+
+python = sys.executable
 
 os.chdir('tests')
-os.system('./runall.py')
+exit_status = os.system("%s runall.py" % (python))
+
+if exit_status != 0:
+    sys.exit(1)
