@@ -6,8 +6,8 @@ import sys
 
 from cmd import Cmd
 
-from reflectrpc import RpcClient
-from reflectrpc import RpcError
+from reflectrpc.client import RpcClient
+from reflectrpc.client import RpcError
 import reflectrpc
 
 def print_types(types):
