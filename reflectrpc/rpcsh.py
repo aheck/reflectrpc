@@ -101,23 +101,31 @@ class ReflectRpcShell(Cmd):
     def __init__(self, host, port):
         super().__init__()
 
-        self.client = RpcClient(host, port)
+        self.host = host
+        self.port = port
+
+        self.tls_enabled = False
+
+    def connect(self):
+        self.client = RpcClient(self.host, self.port)
+        if self.tls_enabled:
+            self.client.enable_tls(None)
 
         try:
             self.retrieve_service_description()
             self.retrieve_functions()
             self.retrieve_custom_types()
-        except ConnectionRefusedError:
-            self.connection_refused_error(True)
+        except reflectrpc.client.NetworkError as e:
+            self.connection_failed_error(True)
 
         self.prompt = '(rpc) '
-        self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (host, port)
+        self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (self.host, self.port)
 
         if self.service_description:
             self.intro += "\n\nSelf-description of Service:\n============================\n" + self.service_description
 
-        self.host = host
-        self.port = port
+    def enable_tls(self):
+        self.tls_enabled = True
 
     def retrieve_service_description(self):
         self.service_description = ''
@@ -140,7 +148,7 @@ class ReflectRpcShell(Cmd):
         except RpcError:
             pass
 
-    def connection_refused_error(self, exit=False):
+    def connection_failed_error(self, exit=False):
         print("Failed to connect to %s on TCP port %d" % (self.client.host, self.client.port))
         if exit:
             sys.exit(1)

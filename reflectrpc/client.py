@@ -5,6 +5,16 @@ import json
 import ssl
 import socket
 
+class NetworkError(Exception):
+    """
+    Encapsulates network errors to ease error handling for users
+    """
+    def __init__(self, real_exception):
+        self.real_exception = real_exception
+
+    def __str__(self):
+        return "NetworkError: " + str(self.real_exception)
+
 class RpcError(Exception):
     """
     JSON-RPC error object as received by the client
@@ -127,11 +137,14 @@ class RpcClient(object):
         Returns:
             str: The response string as returned by the server
             None: If send_only is True
-        """
-        if not self.is_connected():
-            self.__connect()
 
+        Raises:
+            NetworkError: Any network error
+        """
         try:
+            if not self.is_connected():
+                self.__connect()
+
             json_data += "\n"
             self.sock.sendall(json_data.encode('utf-8'))
 
@@ -148,14 +161,14 @@ class RpcClient(object):
             self.recv_buf = ''
 
             return json_reply
-        except socket.error as e:
+        except (ConnectionRefusedError, socket.error, ssl.SSLEOFError) as e:
             try:
                 self.sock.close()
             except:
                 pass
 
             self.sock = None
-            raise e
+            raise NetworkError(e)
 
     def rpc_call(self, method, *params):
         """

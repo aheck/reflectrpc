@@ -49,6 +49,7 @@ class SimpleJsonRpcServer(object):
             sys.exit(1)
 
         self.socket.listen(10)
+        print("Listening on %s:%d" % (self.host, self.port))
 
         while 1:
             conn, addr = self.socket.accept()

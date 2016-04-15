@@ -105,4 +105,6 @@ class TwistedJsonRpcServer(object):
         else:
             reactor.listenTCP(self.port, f, interface=self.host)
 
+        print("Listening on %s:%d" % (self.host, self.port))
+
         reactor.run()
