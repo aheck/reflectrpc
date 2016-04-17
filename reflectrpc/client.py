@@ -153,6 +153,11 @@ class RpcClient(object):
 
             data = self.sock.recv(4096)
             self.recv_buf += data.decode('utf-8')
+
+            if not self.recv_buf.strip().startswith('{'):
+                self.__close_connection()
+                raise NetworkError("Non-JSON content received")
+
             while not "\n" in self.recv_buf:
                 data = self.sock.recv(4096)
                 self.recv_buf += data.decode('utf-8')
@@ -162,12 +167,7 @@ class RpcClient(object):
 
             return json_reply
         except (ConnectionRefusedError, socket.error, ssl.SSLEOFError) as e:
-            try:
-                self.sock.close()
-            except:
-                pass
-
-            self.sock = None
+            self.__close_connection()
             raise NetworkError(e)
 
     def rpc_call(self, method, *params):
@@ -208,6 +208,17 @@ class RpcClient(object):
 
         json_data = json.dumps(self.build_rpc_call(method, *params))
         self.rpc_call_raw(json_data, True)
+
+    def __close_connection(self):
+        """
+        Force the connection to be closed
+        """
+            try:
+                self.sock.close()
+            except:
+                pass
+
+            self.sock = None
 
     def __connect(self):
         """
