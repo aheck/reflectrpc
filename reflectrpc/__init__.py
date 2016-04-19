@@ -480,12 +480,32 @@ class RpcProcessor(object):
         self.custom_types = []
         self.custom_types_dict = {}
 
-        self.description = ''
+        self.description = {
+                'name': '',
+                'description': '',
+                'version': '',
+                'custom_fields': {}
+        }
 
         self.builtins = {}
         self.builtins['__describe_service'] = self.describe_service
         self.builtins['__describe_functions'] = self.describe_functions
         self.builtins['__describe_custom_types'] = self.describe_custom_types
+
+    def set_description(self, name, description, version, custom_fields = {}):
+        """
+        Set the description of this RPC service
+
+        Args:
+            name (str): Name of the service
+            description (str): Description of the service
+            version (str): Version of the service
+            custom_fields (dict): A dict with user-defined fields
+        """
+        self.description['name'] = name
+        self.description['description'] = description
+        self.description['version'] = version
+        self.description['custom_fields'] = custom_fields
 
     def add_custom_type(self, custom_type):
         """
@@ -537,7 +557,7 @@ class RpcProcessor(object):
         Return the self-description of this RPC service
 
         Returns:
-            str: Description of this service
+            dict: Description of this service
         """
         return self.description
 

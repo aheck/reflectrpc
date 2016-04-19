@@ -43,7 +43,8 @@ def build_example_rpcservice():
     address_hash.add_field('city', 'string', 'City')
 
     jsonrpc = reflectrpc.RpcProcessor()
-    jsonrpc.description = "This is an example service for ReflectRPC"
+    jsonrpc.set_description("Example RPC Service",
+            "This is an example service for ReflectRPC", "1.0")
 
     # register types
     jsonrpc.add_custom_type(phone_type_enum)

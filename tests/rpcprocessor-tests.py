@@ -45,6 +45,16 @@ def internal_error():
 def json_error():
     raise JsonRpcError("User error")
 
+class TestMethod(object):
+    def __init__(self):
+        self.testvar = False
+
+    def echo(self, message):
+        return message
+
+    def change_variable(self):
+        self.testvar = True
+
 class RpcProcessorTests(unittest.TestCase):
     def test_execute_basic_rpc_request(self):
         rpc = RpcProcessor()
@@ -145,6 +155,34 @@ class RpcProcessorTests(unittest.TestCase):
         reply = rpc.process_request('{"method": "echo", "params": [], "id": 2}')
         self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'ParamError', 'message': 'Expected 1 parameters for \'echo\' but got 0'})
+
+    def test_method_as_rpc(self):
+        obj = TestMethod()
+
+        rpc = RpcProcessor()
+
+        echo_func = RpcFunction(obj.echo, 'echo', 'Returns what it was given',
+                'string', 'Same value as the first parameter')
+        echo_func.add_param('string', 'message', 'Message to send back')
+
+        rpc.add_function(echo_func)
+
+        reply = rpc.process_request('{"method": "echo", "params": ["Hello Server"], "id": 1}')
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], "Hello Server")
+
+        change_variable_func = RpcFunction(obj.change_variable, 'change_variable',
+                'Changes object attribute', 'bool', '')
+
+        rpc.add_function(change_variable_func)
+
+        self.assertFalse(obj.testvar)
+
+        reply = rpc.process_request('{"method": "change_variable", "params": [], "id": 2}')
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], None)
+
+        self.assertTrue(obj.testvar)
 
     def test_type_checks(self):
         rpc = RpcProcessor()
@@ -364,6 +402,23 @@ class RpcProcessorTests(unittest.TestCase):
             rpc.add_function(echo_hash_func)
         except ValueError:
             self.fail("add_function raised unexpected exception!")
+
+    def test_service_description(self):
+        rpc = RpcProcessor()
+
+        self.assertEqual(rpc.describe_service(), {'name': '', 'description': '',
+            'version': '', 'custom_fields': {}})
+
+        rpc.set_description("Example RPC Service",
+                "This is an example service for ReflectRPC", "1.0",
+                {'field1': 'test', 'field2': 42})
+
+        expected_desc = {'name': 'Example RPC Service',
+                'description': 'This is an example service for ReflectRPC',
+                'version': '1.0', 'custom_fields': {'field1': 'test', 'field2': 42}
+        }
+
+        self.assertEqual(rpc.describe_service(), expected_desc)
 
 
 if __name__ == '__main__':

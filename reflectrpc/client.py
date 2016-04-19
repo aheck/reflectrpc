@@ -49,18 +49,26 @@ class RpcClient(object):
 
         self.tls_enabled = False
         self.tls_version = ssl.PROTOCOL_TLSv1
-        self.tls_client_auth_enabled = False
+        # CA file to check server cert against
         self.ca_file = None
+        # check the hostname of a TLS server against the hostname in the certificate
+        self.check_hostname = False
 
-    def enable_tls(self, ca_file):
+        # do we want to authenticate with a client certificate?
+        self.tls_client_auth_enabled = False
+        # cert to authenticate with the server
+        self.client_cert = None
+
+    def enable_tls(self, ca_file, check_hostname=True):
         """
-        Enable TLS authentication and encryption
+        Enable TLS on the connection
 
         Args:
             ca_file (str): Path to a CA file to validate the server certificate
         """
         self.tls_enabled = True
         self.ca_file = ca_file
+        self.check_hostname = check_hostname
 
     def enable_client_auth(self, cert_file):
         """
@@ -155,7 +163,7 @@ class RpcClient(object):
             self.recv_buf += data.decode('utf-8')
 
             if not self.recv_buf.strip().startswith('{'):
-                self.__close_connection()
+                self.close_connection()
                 raise NetworkError("Non-JSON content received")
 
             while not "\n" in self.recv_buf:
@@ -167,7 +175,7 @@ class RpcClient(object):
 
             return json_reply
         except (ConnectionRefusedError, socket.error, ssl.SSLEOFError) as e:
-            self.__close_connection()
+            self.close_connection()
             raise NetworkError(e)
 
     def rpc_call(self, method, *params):
@@ -209,16 +217,30 @@ class RpcClient(object):
         json_data = json.dumps(self.build_rpc_call(method, *params))
         self.rpc_call_raw(json_data, True)
 
-    def __close_connection(self):
+    def close_connection(self):
         """
         Force the connection to be closed
         """
-            try:
-                self.sock.close()
-            except:
-                pass
+        try:
+            self.sock.close()
+        except:
+            pass
 
-            self.sock = None
+        self.sock = None
+
+    def __check_host_cert(self):
+        """
+        Check if the hostname of our server matches with the server cert
+        """
+        cert = sock.getpeercert()
+        for field in cert['subject']:
+            if field[0][0] != 'commonName':
+                continue
+
+            certhost = field[0][1]
+            if certhost != self.host:
+                raise ssl.SSLError("Host name '%s' doesn't match certificate host '%s'"
+                        % (self.host, certhost))
 
     def __connect(self):
         """
@@ -226,6 +248,7 @@ class RpcClient(object):
 
         Raises:
             socket.error: If connection attempt fails
+            ssl.SSLError: If server hostname validation failed
         """
         self.sock = None
 
@@ -233,8 +256,15 @@ class RpcClient(object):
         sock.settimeout(self.timeout)
 
         if self.tls_enabled:
-            sock = ssl.wrap_socket(sock, ssl_version=self.tls_version)
+            if self.ca_file:
+                sock = ssl.wrap_socket(sock, ssl_version=self.tls_version)
+            else:
+                sock = ssl.wrap_socket(sock, ssl_version=self.tls_version,
+                        ca_certs=self.ca_file)
 
         sock.connect((self.host, self.port))
+
+        if self.check_hostname:
+            self.__check_host_cert()
 
         self.sock = sock
