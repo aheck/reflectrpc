@@ -1,12 +1,17 @@
 from __future__ import unicode_literals
 from builtins import bytes, dict, list, int, float, str
 
+import errno
 import os
 import os.path
 import sys
 import signal
 import socket
 import time
+
+if sys.version_info.major == 2:
+    class ConnectionRefusedError(Exception):
+        pass
 
 class PortFreeTimeout(Exception):
     def __init__(self, port):
@@ -47,7 +52,10 @@ class ServerRunner(object):
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.connect(('localhost', self.port))
                 sock.close()
-            except ConnectionRefusedError:
+            except (ConnectionRefusedError, socket.error) as e:
+                if type(e) == socket.error and e.errno != errno.ECONNREFUSED:
+                    raise e
+
                 # success
                 sock.close()
                 return
@@ -71,7 +79,10 @@ class ServerRunner(object):
                 sock.connect(('localhost', self.port))
                 sock.close()
                 return
-            except ConnectionRefusedError:
+            except (ConnectionRefusedError, socket.error) as e:
+                if type(e) == socket.error and e.errno != errno.ECONNREFUSED:
+                    raise e
+
                 # still waiting
                 sock.close()
 

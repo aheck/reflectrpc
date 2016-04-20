@@ -5,10 +5,12 @@ import json
 
 from abc import ABCMeta, abstractmethod
 
-class AbstractJsonRpcServer(metaclass=ABCMeta):
+class AbstractJsonRpcServer(object):
     """
     Abstract base class for line based JSON-RPC servers
     """
+    __metaclass__=ABCMeta
+
     def __init__(self, jsonrpc, conn):
         self.buf = ''
         self.jsonrpc = jsonrpc

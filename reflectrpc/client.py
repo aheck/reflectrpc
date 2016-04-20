@@ -3,7 +3,17 @@ from builtins import bytes, dict, list, int, float, str
 
 import json
 import ssl
+import sys
 import socket
+
+if sys.version_info.major == 2:
+    class ConnectionRefusedError(Exception):
+        pass
+
+    class SSLEOFError(Exception):
+        pass
+else:
+    from ssl import SSLEOFError
 
 class NetworkError(Exception):
     """
@@ -174,7 +184,7 @@ class RpcClient(object):
             self.recv_buf = ''
 
             return json_reply
-        except (ConnectionRefusedError, socket.error, ssl.SSLEOFError) as e:
+        except (ConnectionRefusedError, socket.error, SSLEOFError) as e:
             self.close_connection()
             raise NetworkError(e)
 
