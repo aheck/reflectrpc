@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 from builtins import bytes, dict, list, int, float, str
 
+import os
 import sys
 import unittest
 
@@ -47,6 +48,11 @@ class RpcShTests(unittest.TestCase):
 
         tokens = split_exec_line('test {"num": 5, "name": "object"}')
         self.assertEqual(tokens, ['test', {'num': 5, 'name': 'object'}])
+
+    def test_rpcsh_compiles_and_runs(self):
+        python = sys.executable
+        exit_status = os.system("cd .. && %s rpcsh --help" % (python))
+        self.assertEqual(exit_status, 0)
 
 if __name__ == '__main__':
     unittest.main()
