@@ -51,7 +51,7 @@ class RpcShTests(unittest.TestCase):
 
     def test_rpcsh_compiles_and_runs(self):
         python = sys.executable
-        exit_status = os.system("cd .. && %s rpcsh --help" % (python))
+        exit_status = os.system("cd .. && %s rpcsh --help > /dev/null" % (python))
         self.assertEqual(exit_status, 0)
 
 if __name__ == '__main__':
