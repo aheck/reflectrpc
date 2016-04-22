@@ -9,6 +9,10 @@ import socket
 
 import reflectrpc.server
 
+if sys.version_info.major == 2:
+    class ConnectionResetError(Exception):
+        pass
+
 class JsonRpcServer(reflectrpc.server.AbstractJsonRpcServer):
     """
     Blocking socket implementation of AbstractJsonRpcServer
