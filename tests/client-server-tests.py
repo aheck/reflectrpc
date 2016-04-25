@@ -52,6 +52,21 @@ class ClientServerTests(unittest.TestCase):
 
         try:
             client = RpcClient('localhost', 5500)
+            client.enable_tls(None, False)
+            result = None
+
+            result = client.rpc_call('echo', 'Hello Server')
+
+            self.assertEqual(result, 'Hello Server')
+        finally:
+            server.stop()
+
+    def test_twisted_server_tls_non_tls_client_fail(self):
+        server = ServerRunner('../examples/servertls.py', 5500)
+        server.run()
+
+        try:
+            client = RpcClient('localhost', 5500)
             result = None
 
             with self.assertRaises(NetworkError) as cm:
