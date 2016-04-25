@@ -15,6 +15,12 @@ from reflectrpc.rpcsh import ReflectRpcShell
 
 class RpcShTests(unittest.TestCase):
     def test_split_exec_line(self):
+        tokens = split_exec_line('echo')
+        self.assertEqual(tokens, ['echo'])
+
+        tokens = split_exec_line('echo     ')
+        self.assertEqual(tokens, ['echo'])
+
         tokens = split_exec_line('echo "Hello Server"')
         self.assertEqual(tokens, ['echo', 'Hello Server'])
 
@@ -48,6 +54,12 @@ class RpcShTests(unittest.TestCase):
 
         tokens = split_exec_line('test {"num": 5, "name": "object"}')
         self.assertEqual(tokens, ['test', {'num': 5, 'name': 'object'}])
+
+        tokens = split_exec_line('func [1,2,3,4,5,6] [7,8,9] [10,11,12,13]')
+        self.assertEqual(tokens, ['func', [1,2,3,4,5,6], [7,8,9], [10,11,12,13]])
+
+        tokens = split_exec_line('func {"array": [{"key1": "value1", "key2": "value2"}]} 5 ["str1", "str2", 5, "str3"]')
+        self.assertEqual(tokens, ['func', {'array': [{'key1': 'value1', 'key2': 'value2'}]}, 5, ['str1', 'str2', 5, 'str3']])
 
     def test_rpcsh_compiles_and_runs(self):
         python = sys.executable
