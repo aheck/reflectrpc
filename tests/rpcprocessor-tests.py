@@ -67,6 +67,58 @@ class RpcProcessorTests(unittest.TestCase):
         self.assertEqual(reply['error'], None)
         self.assertTrue(reply['result'])
 
+    def test_describe_functions(self):
+        rpc = RpcProcessor()
+
+        echo_func = RpcFunction(echo, 'echo', 'Returns what it was given',
+                'string', 'Same value as the first parameter')
+        echo_func.add_param('string', 'message', 'Message to send back')
+
+        rpc.add_function(echo_func)
+        reply = rpc.process_request('{"method": "__describe_functions", "params": [], "id": 1}')
+
+        expected = [{
+                    'name': 'echo',
+                    'description': 'Returns what it was given',
+                    'result_type': 'string',
+                    'result_desc': 'Same value as the first parameter',
+                    'params': [{'name': 'message', 'type': 'string',
+                        'description': 'Message to send back'}]
+        }]
+        self.assertEqual(reply['result'], expected)
+
+        add_func = RpcFunction(add, 'add', 'Returns the sum of the two parameters',
+                'int', 'Sum of a and b')
+        add_func.add_param('int', 'a', 'First int to add')
+        add_func.add_param('int', 'b', 'Second int to add')
+
+        rpc.add_function(add_func)
+
+        reply = rpc.process_request('{"method": "__describe_functions", "params": [], "id": 2}')
+
+        expected = [
+                {
+                    'name': 'echo',
+                    'description': 'Returns what it was given',
+                    'result_type': 'string',
+                    'result_desc': 'Same value as the first parameter',
+                    'params': [{'name': 'message', 'type': 'string',
+                        'description': 'Message to send back'}]
+                },
+                {
+                    'name': 'add',
+                    'description': 'Returns the sum of the two parameters',
+                    'result_type': 'int',
+                    'result_desc': 'Sum of a and b',
+                    'params': [
+                        {'name': 'a', 'type': 'int', 'description': 'First int to add'},
+                        {'name': 'b', 'type': 'int', 'description': 'Second int to add'}
+                    ]
+                }
+        ]
+
+        self.assertEqual(reply['result'], expected)
+
     def test_echo(self):
         rpc = RpcProcessor()
 
@@ -82,8 +134,8 @@ class RpcProcessorTests(unittest.TestCase):
     def test_add(self):
         rpc = RpcProcessor()
 
-        add_func = RpcFunction(add, 'add', 'Returns the sum of two parameters',
-                'string', 'Same value as the first parameter')
+        add_func = RpcFunction(add, 'add', 'Returns the sum of the two parameters',
+                'int', 'Sum of a and b')
         add_func.add_param('int', 'a', 'First int to add')
         add_func.add_param('int', 'b', 'Second int to add')
 
@@ -111,8 +163,8 @@ class RpcProcessorTests(unittest.TestCase):
 
         echo_func = RpcFunction(echo, 'echo', 'Returns what it was given',
                 'string', 'Same value as the first parameter')
-        add_func = RpcFunction(add, 'echo', 'Returns the sum of two parameters',
-                'string', 'Same value as the first parameter')
+        add_func = RpcFunction(add, 'echo', 'Returns the sum of the two parameters',
+                'int', 'Sum of a and b')
 
         rpc.add_function(echo_func)
         self.assertRaises(ValueError, rpc.add_function, add_func)
@@ -193,8 +245,8 @@ class RpcProcessorTests(unittest.TestCase):
 
         rpc.add_function(echo_func)
 
-        add_func = RpcFunction(add, 'add', 'Returns the sum of two parameters',
-                'string', 'Same value as the first parameter')
+        add_func = RpcFunction(add, 'add', 'Returns the sum of the two parameters',
+                'int', 'Sum of a and b')
         add_func.add_param('int', 'a', 'First int to add')
         add_func.add_param('int', 'b', 'Second int to add')
 
