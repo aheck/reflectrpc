@@ -127,6 +127,11 @@ class JsonRpcParamTypeError(JsonRpcInvalidRequest):
             expected_type (str): Name of the type this parameter expects
             real_type (str): Type of the value the user actually passed
         """
+        self.function_name = function_name
+        self.param_name = param_name
+        self.expected_type = expected_type
+        self.real_type = real_type
+
         self.msg = "%s: Expected value of type '%s' for parameter '%s' but got value of type '%s'" % (function_name, expected_type, param_name, real_type)
         self.name = 'TypeError'
 
@@ -344,6 +349,8 @@ class JsonHashType(object):
         self.typ = 'hash'
         self.description = description
         self.fields = []
+        self.fields_dict = {}
+        self.fieldnames = []
 
     def add_field(self, name, typ, description):
         """
@@ -357,7 +364,7 @@ class JsonHashType(object):
         Raises:
             ValueError: If typ is not a valid type
         """
-        if not typ in json_types and not result_type[0].isupper():
+        if not typ in json_types and not typ[0].isupper():
             raise ValueError("Invalid JSON-RPC type: %s" % (typ))
 
         field = {}
@@ -367,6 +374,8 @@ class JsonHashType(object):
         field['description'] = description
 
         self.fields.append(field)
+        self.fields_dict[name] = field
+        self.fieldnames.append(name)
 
     def to_dict(self):
         """
@@ -492,6 +501,14 @@ class RpcProcessor(object):
         self.builtins['__describe_functions'] = self.describe_functions
         self.builtins['__describe_custom_types'] = self.describe_custom_types
 
+        self.named_hash_validation = False
+
+        self.json2py = {'bool': 'bool', 'int': 'int', 'float': 'float', 'string':
+                'str', 'array': 'list', 'hash': 'dict', 'base64': 'str'}
+
+        self.py2json = {'bool': 'bool', 'int': 'int', 'float': 'float', 'str':
+                'string', 'list': 'array', 'dict': 'hash'}
+
     def set_description(self, name, description, version, custom_fields = {}):
         """
         Set the description of this RPC service
@@ -526,6 +543,18 @@ class RpcProcessor(object):
 
         self.custom_types.append(custom_type)
         self.custom_types_dict[custom_type.name] = custom_type
+
+    def enable_named_hash_validation(self):
+        """
+        Enable validation of the fields of named hashes
+        """
+        self.named_hash_validation = True
+
+    def disable_named_hash_validation(self):
+        """
+        Disable validation of the fields of named hashes
+        """
+        self.named_hash_validation = False
 
     def add_function(self, func):
         """
@@ -600,41 +629,63 @@ class RpcProcessor(object):
         if len(params) != len(func.params):
             raise JsonRpcParamError(func.name, len(func.params), len(params))
 
-        json2py = {'bool': 'bool', 'int': 'int', 'float': 'float', 'string':
-                'str', 'array': 'list', 'hash': 'dict', 'base64': 'str'}
-
-        py2json = {'bool': 'bool', 'int': 'int', 'float': 'float', 'str':
-                'string', 'list': 'array', 'dict': 'hash'}
-
         i = 0
 
         for p in func.params:
-            typename = type(params[i]).__name__
+            value = params[i]
+            self.check_param_type(func.name, p['name'], p['type'], i, value)
 
-            # workaround for Python 2.7
-            if typename == 'unicode':
-                typename = 'str'
+            if self.named_hash_validation and self.__is_named_hash_type(p['type']):
+                named_hash = self.custom_types_dict[p['type']]
 
-            # custom type?
-            if p['type'][0].isupper():
-                typeobj = self.custom_types_dict[p['type']]
+                for fieldname in named_hash.fieldnames:
+                    if fieldname not in value:
+                        raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s': Missing field '%s'" % (func.name, p['name'], p['type'], fieldname))
 
-                if type(typeobj).__name__ == 'JsonEnumType':
                     try:
-                        if not typeobj.validate(params[i]):
-                            raise JsonRpcTypeError("%s: '%s' is not a valid value for parameter '%s' of enum type '%s'"
-                                    % (func.name, str(params[i]), p['name'], p['type']))
-                    except ValueError:
-                        raise JsonRpcTypeError("%s: Enum parameter '%s' requires a value of type 'int' or 'string' but type was '%s'"
-                                % (func.name, p['name'], py2json[typename]))
-                elif type(typeobj).__name__ == 'JsonHashType':
-                    if py2json[typename] != 'hash':
-                        raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'"
-                                % (func.name, p['name'], p['type'], py2json[typename]))
-            elif typename != json2py[p['type']]:
-                raise JsonRpcParamTypeError(func.name, p['name'], p['type'], py2json[typename])
+                        self.check_param_type(func.name, fieldname, named_hash.fields_dict[fieldname]['type'], fieldname, value[fieldname])
+                    except JsonRpcParamTypeError as e:
+                        raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': Expected %s but got %s" % (func.name, p['name'], p['type'], fieldname, e.expected_type, e.real_type))
 
             i += 1
+
+    def check_param_type(self, funcname, name, declared_type, param_pos, value):
+        """
+        Check the type of a single parameter
+
+        Args:
+            name (string): Name of the parameter
+            declared_type (string): Type that we expect from the caller
+            param_pos (int): Position of the parameter in the parameter list
+            value (any): Actual value that was passed by the caller
+        """
+        real_type = type(value).__name__
+
+        # workaround for Python 2.7
+        if real_type == 'unicode':
+            real_type = 'str'
+
+        # custom type?
+        if declared_type[0].isupper():
+            typeobj = self.custom_types_dict[declared_type]
+
+            if type(typeobj).__name__ == 'JsonEnumType':
+                try:
+                    if not typeobj.validate(value):
+                        raise JsonRpcTypeError("%s: '%s' is not a valid value for parameter '%s' of enum type '%s'"
+                                % (funcname, str(value), name, declared_type))
+                except ValueError:
+                    raise JsonRpcTypeError("%s: Enum parameter '%s' requires a value of type 'int' or 'string' but type was '%s'"
+                            % (funcname, name, self.py2json[real_type]))
+            elif type(typeobj).__name__ == 'JsonHashType':
+                if self.py2json[real_type] != 'hash':
+                    raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'"
+                            % (funcname, name, declared_type,
+                                self.py2json[real_type]))
+        # primitive type?
+        elif real_type != self.json2py[declared_type]:
+            raise JsonRpcParamTypeError(funcname, name, declared_type,
+                    self.py2json[real_type])
 
     def process_request(self, message):
         """
@@ -751,3 +802,39 @@ class RpcProcessor(object):
             error = JsonRpcInternalError("Method execution failed: %s" % (request['method']))
             reply['error'] = error.to_dict()
             return reply
+
+    def __is_named_hash_type(self, typename):
+        """
+        Check if a typename references a Named Hash
+
+        Args:
+            typename (str): Name of the type to check
+
+        Returns:
+            bool: True if it is a Named Hash, False otherwise
+        """
+        if typename[0].isupper():
+            typeobj = self.custom_types_dict[typename]
+
+            if type(typeobj).__name__ == 'JsonHashType':
+                return True
+
+        return False
+
+    def __is_enum_type(self, typename):
+        """
+        Check if a typename references an Enum
+
+        Args:
+            typename (str): Name of the type to check
+
+        Returns:
+            bool: True if it is an Enum, False otherwise
+        """
+        if typename[0].isupper():
+            typeobj = self.custom_types_dict[typename]
+
+            if type(typeobj).__name__ == 'JsonEnumType':
+                return True
+
+        return False

@@ -361,7 +361,7 @@ class RpcProcessorTests(unittest.TestCase):
         self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], 'MOBILE')
 
-    def test_type_checks_for_named_hashes(self):
+    def test_basic_type_checks_for_named_hashes(self):
         rpc = RpcProcessor()
 
         address_type = JsonHashType('Address', 'Street address')
@@ -388,6 +388,43 @@ class RpcProcessorTests(unittest.TestCase):
         reply = rpc.process_request('{"method": "echo_hash", "params": [{"name": "test", "number": 42}], "id": 2}')
         self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], {'name': 'test', 'number': 42})
+
+    def test_type_checks_for_fields_of_named_hashes(self):
+        rpc = RpcProcessor()
+
+        custom_type = JsonHashType('CustomHash', 'Dummy named hash for testing')
+        custom_type.add_field('boolfield', 'bool', 'Some bool')
+        custom_type.add_field('stringfield', 'string', 'Some string')
+        custom_type.add_field('intfield', 'int', 'Some integer')
+        custom_type.add_field('floatfield', 'float', 'Some float')
+        custom_type.add_field('arrayfield', 'array', 'City')
+        custom_type.add_field('hashfield', 'hash', 'City')
+
+        rpc.add_custom_type(custom_type)
+        rpc.enable_named_hash_validation()
+
+        echo_hash_func = RpcFunction(echo_hash, 'echo_hash', 'Returns what it was given',
+                'hash', 'Same value as the first parameter')
+        echo_hash_func.add_param('CustomHash', 'custom_hash', 'Some custom hash instance')
+
+        rpc.add_function(echo_hash_func)
+
+        # Call with an empty hash should get us an error mentioning all missing fields
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{}], "id": 1}')
+        self.assertEqual(reply['result'], None)
+        self.assertEqual(reply['error'], {'name': 'TypeError',
+            'message': "echo_hash: Named hash parameter 'custom_hash' of type 'CustomHash': Missing field 'boolfield'"
+        })
+
+        # Call with an invalid field should return the corresponding error
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"boolfield": true, "stringfield": 5, "intfield": 5, "floatfield": 5.5, "arrayfield": [], "hashfield": {}}], "id": 2}')
+        self.assertEqual(reply['result'], None)
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_hash: Named hash parameter 'custom_hash' of type 'CustomHash' has invalid field 'stringfield': Expected string but got int"})
+
+        # Call with a valid hash should return the same hash without error
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"boolfield": true, "stringfield": "test", "intfield": 5, "floatfield": 5.5, "arrayfield": [], "hashfield": {}}], "id": 3}')
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], {"boolfield": True, "stringfield": "test", "intfield": 5, "floatfield": 5.5, "arrayfield": [], "hashfield": {}})
 
     def test_enum_type_check_in_add_function(self):
         rpc = RpcProcessor()
