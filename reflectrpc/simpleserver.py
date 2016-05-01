@@ -35,7 +35,7 @@ class SimpleJsonRpcServer(object):
             host (str): Hostname or IP to listen on
             port (int): TCP port to listen on
         """
-        self.jsonrpc = rpcprocessor
+        self.rpcprocessor = rpcprocessor
         self.host = host
         self.port = port
 
@@ -57,7 +57,7 @@ class SimpleJsonRpcServer(object):
 
         while 1:
             conn, addr = self.socket.accept()
-            self.server = JsonRpcServer(self.jsonrpc, conn)
+            self.server = JsonRpcServer(self.rpcprocessor, conn)
 
             try:
                 self.__handle_connection(conn)

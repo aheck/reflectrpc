@@ -27,7 +27,7 @@ class JsonRpcProtocol(Protocol):
 
     def dataReceived(self, data):
         if not hasattr(self, 'server'):
-            self.server = JsonRpcServer(self.factory.jsonrpc, self.transport)
+            self.server = JsonRpcServer(self.factory.rpcprocessor, self.transport)
 
         self.server.data_received(data)
 
@@ -38,7 +38,7 @@ class JsonRpcProtocolFactory(Factory):
     protocol = JsonRpcProtocol
 
     def __init__(self, rpcprocessor):
-        self.jsonrpc = rpcprocessor
+        self.rpcprocessor = rpcprocessor
 
 class TwistedJsonRpcServer(object):
     """
@@ -55,7 +55,7 @@ class TwistedJsonRpcServer(object):
         """
         self.host = host
         self.port = port
-        self.jsonrpc = rpcprocessor
+        self.rpcprocessor = rpcprocessor
 
         self.tls_enabled = False
         self.tls_client_auth_enabled = False
@@ -93,7 +93,7 @@ class TwistedJsonRpcServer(object):
         """
         Start the server and listen on host:port
         """
-        f = JsonRpcProtocolFactory(self.jsonrpc)
+        f = JsonRpcProtocolFactory(self.rpcprocessor)
         if self.tls_enabled:
             if not self.tls_client_auth_enabled:
                 reactor.listenSSL(self.port, f, self.cert.options(),
