@@ -426,6 +426,41 @@ class RpcProcessorTests(unittest.TestCase):
         self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], {"boolfield": True, "stringfield": "test", "intfield": 5, "floatfield": 5.5, "arrayfield": [], "hashfield": {}})
 
+    def test_type_checks_enums_in_named_hashes(self):
+        rpc = RpcProcessor()
+
+        enum = JsonEnumType('PhoneType', 'Type of a phone number')
+        enum.add_value('HOME', 'Home phone')
+        enum.add_value('WORK', 'Work phone')
+        enum.add_value('MOBILE', 'Mobile phone')
+        enum.add_value('FAX', 'FAX number')
+
+        rpc.add_custom_type(enum)
+
+        custom_hash = JsonHashType('CustomHash', 'Dummy named hash for testing')
+        custom_hash.add_field('phonetype', 'PhoneType', 'Type of phone number')
+
+        rpc.add_custom_type(custom_hash)
+
+        echo_hash_func = RpcFunction(echo_hash, 'echo_hash', 'Returns what it was given',
+                'hash', 'Same value as the first parameter')
+        echo_hash_func.add_param('CustomHash', 'custom_hash', 'Some custom hash instance')
+
+        rpc.add_function(echo_hash_func)
+        rpc.enable_named_hash_validation()
+
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"phonetype": "TEST"}], "id": 1}')
+        self.assertEqual(reply['result'], None)
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_hash: Named hash parameter 'custom_hash' of type 'CustomHash' has invalid field 'phonetype': 'TEST' is not a valid value"})
+
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"phonetype": []}], "id": 2}')
+        self.assertEqual(reply['result'], None)
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_hash: Named hash parameter 'custom_hash' of type 'CustomHash' has invalid field 'phonetype': Value must be of type 'int' or 'string' but type was 'array'"})
+
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"phonetype": "HOME"}], "id": 3}')
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], {'phonetype': 'HOME'})
+
     def test_enum_type_check_in_add_function(self):
         rpc = RpcProcessor()
 

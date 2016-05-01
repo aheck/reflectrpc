@@ -152,6 +152,29 @@ class JsonRpcInternalError(JsonRpcError):
         self.msg = msg
         self.name = 'InternalError'
 
+class InvalidEnumValueError(Exception):
+    def __init__(self, name, expected_type, value):
+        self.name = name
+        self.expected_type = expected_type
+        self.value = value
+
+class InvalidEnumTypeError(Exception):
+    def __init__(self, name, real_type):
+        self.name = name
+        self.real_type = real_type
+
+class InvalidNamedHashError(Exception):
+    def __init__(self, name, expected_type, real_type):
+        self.name = name
+        self.expected_type = expected_type
+        self.real_type = real_type
+
+class InvalidPrimitiveTypeError(Exception):
+    def __init__(self, name, expected_type, real_type):
+        self.name = name
+        self.expected_type = expected_type
+        self.real_type = real_type
+
 class JsonEnumType(object):
     """
     Self-describing enum types
@@ -633,8 +656,21 @@ class RpcProcessor(object):
 
         for p in func.params:
             value = params[i]
-            self.check_param_type(func.name, p['name'], p['type'], i, value)
+            try:
+                self.check_param_type(p['name'], p['type'], value)
+            except InvalidEnumValueError as e:
+                raise JsonRpcTypeError("%s: '%s' is not a valid value for parameter '%s' of enum type '%s'"
+                        % (func.name, e.value, e.name, e.expected_type))
+            except InvalidEnumTypeError as e:
+                raise JsonRpcTypeError("%s: Enum parameter '%s' requires a value of type 'int' or 'string' but type was '%s'"
+                        % (func.name, e.name, e.real_type))
+            except InvalidNamedHashError as e:
+                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'"
+                        % (func.name, e.name, e.expected_type, e.real_type))
+            except InvalidPrimitiveTypeError as e:
+                raise JsonRpcParamTypeError(func.name, e.name, e.expected_type, e.real_type)
 
+            # validate named hashes if named has validation is enabled
             if self.named_hash_validation and self.__is_named_hash_type(p['type']):
                 named_hash = self.custom_types_dict[p['type']]
 
@@ -643,20 +679,25 @@ class RpcProcessor(object):
                         raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s': Missing field '%s'" % (func.name, p['name'], p['type'], fieldname))
 
                     try:
-                        self.check_param_type(func.name, fieldname, named_hash.fields_dict[fieldname]['type'], fieldname, value[fieldname])
-                    except JsonRpcParamTypeError as e:
+                        self.check_param_type(fieldname, named_hash.fields_dict[fieldname]['type'], value[fieldname])
+                    except InvalidEnumValueError as e:
+                        raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': '%s' is not a valid value" % (func.name, p['name'], named_hash.name, fieldname, e.value))
+                    except InvalidEnumTypeError as e:
+                        raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': Value must be of type 'int' or 'string' but type was '%s'" % (func.name, p['name'], named_hash.name, fieldname, e.real_type))
+                    except InvalidNamedHashError as e:
+                        raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'" % (func.name, e.name, e.expected_type, e.real_type))
+                    except InvalidPrimitiveTypeError as e:
                         raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': Expected %s but got %s" % (func.name, p['name'], p['type'], fieldname, e.expected_type, e.real_type))
 
             i += 1
 
-    def check_param_type(self, funcname, name, declared_type, param_pos, value):
+    def check_param_type(self, name, declared_type, value):
         """
         Check the type of a single parameter
 
         Args:
             name (string): Name of the parameter
             declared_type (string): Type that we expect from the caller
-            param_pos (int): Position of the parameter in the parameter list
             value (any): Actual value that was passed by the caller
         """
         real_type = type(value).__name__
@@ -672,20 +713,15 @@ class RpcProcessor(object):
             if type(typeobj).__name__ == 'JsonEnumType':
                 try:
                     if not typeobj.validate(value):
-                        raise JsonRpcTypeError("%s: '%s' is not a valid value for parameter '%s' of enum type '%s'"
-                                % (funcname, str(value), name, declared_type))
+                        raise InvalidEnumValueError(name, declared_type, str(value))
                 except ValueError:
-                    raise JsonRpcTypeError("%s: Enum parameter '%s' requires a value of type 'int' or 'string' but type was '%s'"
-                            % (funcname, name, self.py2json[real_type]))
+                    raise InvalidEnumTypeError(name, self.py2json[real_type])
             elif type(typeobj).__name__ == 'JsonHashType':
                 if self.py2json[real_type] != 'hash':
-                    raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'"
-                            % (funcname, name, declared_type,
-                                self.py2json[real_type]))
+                    raise InvalidNamedHashError(name, declared_type, self.py2json[real_type])
         # primitive type?
         elif real_type != self.json2py[declared_type]:
-            raise JsonRpcParamTypeError(funcname, name, declared_type,
-                    self.py2json[real_type])
+            raise InvalidPrimitiveTypeError(name, declared_type, self.py2json[real_type])
 
     def process_request(self, message):
         """
