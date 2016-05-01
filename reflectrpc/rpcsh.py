@@ -164,32 +164,45 @@ class ReflectRpcShell(Cmd):
     def do_help(self, line):
         if not line:
             print("list   - List all RPC functions advertised by the server")
-            print("doc    - Shows the documentation of a RPC function")
-            print("type   - Shows the documentation of a custom RPC type")
-            print("exec   - Execute RPC call")
-            print("notify - Execute RPC call but tell server to send no response")
+            print("doc    - Show the documentation of a RPC function")
+            print("type   - Show the documentation of a custom RPC type")
+            print("exec   - Execute an RPC call")
+            print("notify - Execute an RPC call but tell the server to send no response")
             print("raw    - Directly send a raw JSON-RPC message to the server")
             print("quit   - Quit this program")
-            print("help   - Print this message. 'help [command]' prints a\n       detailed help message for a command")
+            print("help   - Print this message. 'help [command]' prints a")
+            print("         detailed help message for a command")
             return
 
-        if line == 'exec':
+        if line == 'list':
+            print("List all RPC functions advertised by the server")
+        elif line == 'doc':
+            print("Show the documentation of an RPC function")
+            print("Example:")
+            print("    doc echo")
+        elif line == 'type':
+            print("Shos the documentation of a custom RPC type")
+            print("Example:")
+            print("    type PhoneType")
+        elif line == 'exec':
+            print("Execute an RPC call")
             print("Examples:")
             print("    exec echo \"Hello RPC server\"")
             print("    exec add 4 8")
+        elif line == 'notify':
+            print("Execute an RPC call but tell the server to send no response")
+            print("Example:")
+            print("    notify rpc_function")
         elif line == 'raw':
-            pass
-        elif line == 'doc':
-            print("Examples:")
-            print("    doc echo")
-        elif line == 'list':
-            print("List all RPC functions advertised by the server")
+            print("Directly send a raw JSON-RPC message to the server")
+            print("Example:")
+            print('    raw {"method": "echo", "params": ["Hello Server"], "id": 1}')
         elif line == 'quit':
             print("Quit this program")
         elif line == 'help':
             pass
         else:
-            print("No help for unknown command:", line)
+            print("No help available for unknown command:", line)
 
     def do_type(self, line):
         if not line:
@@ -229,7 +242,7 @@ class ReflectRpcShell(Cmd):
 
     def do_doc(self, line):
         if not line:
-            print("You have to pass the name of a RPC function: 'doc [function]'")
+            print("You have to pass the name of an RPC function: 'doc [function]'")
             return
 
         function = [func for func in self.functions if func['name'] == line]
