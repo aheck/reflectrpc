@@ -5,6 +5,7 @@ import os
 import sys
 import json
 
+from twisted.web import server, resource
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor, ssl
 from twisted.python import log
@@ -40,6 +41,13 @@ class JsonRpcProtocolFactory(Factory):
     def __init__(self, rpcprocessor):
         self.rpcprocessor = rpcprocessor
 
+class JsonRpcHttpResource(resource.Resource):
+    isLeaf = True
+    def render_POST(self, request):
+        data = request.content.getvalue().decode('utf-8')
+        reply = json.dumps(self.rpcprocessor.process_request(data))
+        return reply.encode('utf-8')
+
 class TwistedJsonRpcServer(object):
     """
     JSON-RPC server for line-terminated messages based on Twisted
@@ -61,6 +69,7 @@ class TwistedJsonRpcServer(object):
         self.tls_client_auth_enabled = False
         self.cert = None
         self.client_auth_ca = None
+        self.http_enabled = False
 
     def enable_tls(self, pem_file):
         """
@@ -89,11 +98,30 @@ class TwistedJsonRpcServer(object):
         with open(ca_file) as f: ca_data = f.read()
         self.client_auth_ca = ssl.Certificate.loadPEM(ca_data)
 
+    def enable_http(self):
+        """
+        Enables HTTP as transport protocol
+
+        JSON-RPC requests are to be sent to '/rpc' as HTTP POST requests with
+        content type 'application/json-rpc'. The server sends the reply in
+        the response body.
+        """
+        self.http_enabled = True
+
     def run(self):
         """
         Start the server and listen on host:port
         """
-        f = JsonRpcProtocolFactory(self.rpcprocessor)
+        f = None
+
+        if self.http_enabled:
+            root = JsonRpcHttpResource()
+            root.putChild('rpc', root)
+            root.rpcprocessor = self.rpcprocessor
+            f = server.Site(root)
+        else:
+            f = JsonRpcProtocolFactory(self.rpcprocessor)
+
         if self.tls_enabled:
             if not self.tls_client_auth_enabled:
                 reactor.listenSSL(self.port, f, self.cert.options(),

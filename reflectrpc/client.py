@@ -69,6 +69,9 @@ class RpcClient(object):
         # cert to authenticate with the server
         self.client_cert = None
 
+        self.http_enabled = False
+        self.http_path = None
+
     def enable_tls(self, ca_file, check_hostname=True):
         """
         Enable TLS on the connection
@@ -88,6 +91,16 @@ class RpcClient(object):
             cert_file (str): Path of a PEM file containing server cert and key
         """
         self.tls_client_auth_enabled = True
+
+    def enable_http(self, http_path='/rpc'):
+        """
+        Use HTTP as transport protocol
+
+        Args:
+            http_path (str): The path to the RPC HTTP resource (e.g. /rpc)
+        """
+        self.http_enabled = True
+        self.http_path = http_path
 
     def is_connected(self):
         """
@@ -163,30 +176,118 @@ class RpcClient(object):
             if not self.is_connected():
                 self.__connect()
 
-            json_data += "\n"
-            self.sock.sendall(json_data.encode('utf-8'))
+            self.send_request(json_data)
 
             if send_only:
                 return
 
-            data = self.sock.recv(4096)
-            self.recv_buf += data.decode('utf-8')
-
-            if not self.recv_buf.strip().startswith('{'):
-                self.close_connection()
-                raise NetworkError("Non-JSON content received")
-
-            while not "\n" in self.recv_buf:
-                data = self.sock.recv(4096)
-                self.recv_buf += data.decode('utf-8')
-
-            json_reply = self.recv_buf
-            self.recv_buf = ''
+            json_reply = self.receive_response()
 
             return json_reply
         except (ConnectionRefusedError, socket.error, SSLEOFError) as e:
             self.close_connection()
             raise NetworkError(e)
+
+    def send_request(self, data):
+        data = data.encode('utf-8')
+
+        if self.http_enabled:
+            http_headers = [
+                    'POST %s HTTP/1.1' % (self.http_path),
+                    'Host: %s' % (self.host),
+                    'Content-Type: application/json-rpc',
+                    'Content-Length: %d' % (len(data))
+            ]
+
+            header = '\r\n'.join(http_headers) + '\r\n\r\n'
+            header = header.encode('utf-8')
+
+            self.sock.sendall(header)
+            self.sock.sendall(data)
+        else:
+            data += '\r\n'.encode('utf-8')
+            self.sock.sendall(data)
+
+    def receive_response(self):
+        if self.http_enabled:
+            return self.receive_http_response()
+        else:
+            return self.receive_line_response()
+
+    def receive_http_response(self):
+        data = self.sock.recv(4096)
+
+        while not b"\r\n" in data:
+            if len(data >= 4096):
+                raise Exception("Couldn't find a complete HTTP header within the first 4096 bytes of the server response!")
+
+            data += self.sock.recv(4096)
+
+        header, data = data.split(b"\r\n\r\n", 1)
+
+        header = header.decode('utf-8')
+        headerlines = header.splitlines()
+
+        if len(headerlines) == 0:
+            raise Exception("Invalid HTTP header")
+
+        # check HTTP status line
+        statusline = headerlines.pop(0)
+        fields = statusline.split(' ')
+
+        if fields[0] != 'HTTP/1.1':
+            raise Exception("Unexpected HTTP version: '%s'" % (fields[0]))
+
+        if fields[1] != '200':
+            raise Exception("Expected status code '200' but got '%s'" % (fields[1]))
+
+        content_length = 0
+        content_type = ''
+        content_encoding = 'UTF-8'
+
+        while headerlines:
+            line = headerlines.pop(0)
+            fields = line.split(': ')
+
+            if fields[0] == 'Content-Length':
+                content_length = int(fields[1])
+
+            if fields[0] == 'Content-Type':
+                content_type = fields[1]
+
+            if fields[0] == 'Content-Encoding':
+                content_encoding = fields[1]
+
+        if content_encoding != 'UTF-8':
+            raise Exception("Unsupported content encoding: '%s'" % (content_encoding))
+
+        if content_length == 0:
+            return ''
+
+        remaining_bytes = content_length - len(data)
+
+        while remaining_bytes > 0:
+            data += self.sock.recv(remaining_bytes)
+            remaining_bytes = content_length - len(data)
+
+        return data.decode('utf-8')
+
+    def receive_line_response(self):
+        data = self.sock.recv(4096)
+        self.recv_buf += data.decode('utf-8')
+
+        if not self.recv_buf.strip().startswith('{'):
+            self.close_connection()
+            raise NetworkError("Non-JSON content received")
+
+        while not "\n" in self.recv_buf:
+            data = self.sock.recv(4096)
+            self.recv_buf += data.decode('utf-8')
+
+        response = self.recv_buf
+        self.recv_buf = ''
+
+        return response
 
     def rpc_call(self, method, *params):
         """

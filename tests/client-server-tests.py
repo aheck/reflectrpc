@@ -20,23 +20,24 @@ class ClientServerTests(unittest.TestCase):
         server = ServerRunner('../examples/server.py', 5500)
         server.run()
 
-        try:
-            client = RpcClient('localhost', 5500)
-            result = None
+        client = RpcClient('localhost', 5500)
 
+        try:
             result = client.rpc_call('echo', 'Hello Server')
             client.close_connection()
 
             self.assertEqual(result, 'Hello Server')
         finally:
+            client.close_connection()
             server.stop()
 
     def test_twisted_server(self):
         server = ServerRunner('../examples/servertwisted.py', 5500)
         server.run()
 
+        client = RpcClient('localhost', 5500)
+
         try:
-            client = RpcClient('localhost', 5500)
             result = None
 
             result = client.rpc_call('echo', 'Hello Server')
@@ -44,36 +45,53 @@ class ClientServerTests(unittest.TestCase):
 
             self.assertEqual(result, 'Hello Server')
         finally:
+            client.close_connection()
+            server.stop()
+
+    def test_twisted_server_http(self):
+        server = ServerRunner('../examples/serverhttp.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+        client.enable_http()
+
+        try:
+            result = client.rpc_call('echo', 'Hello Server')
+
+            self.assertEqual(result, 'Hello Server')
+        finally:
+            client.close_connection()
             server.stop()
 
     def test_twisted_server_tls(self):
         server = ServerRunner('../examples/servertls.py', 5500)
         server.run()
 
-        try:
-            client = RpcClient('localhost', 5500)
-            client.enable_tls(None, False)
-            result = None
+        client = RpcClient('localhost', 5500)
+        client.enable_tls(None, False)
 
+        try:
             result = client.rpc_call('echo', 'Hello Server')
 
             self.assertEqual(result, 'Hello Server')
         finally:
+            client.close_connection()
             server.stop()
 
     def test_twisted_server_tls_non_tls_client_fail(self):
         server = ServerRunner('../examples/servertls.py', 5500)
         server.run()
 
+        client = RpcClient('localhost', 5500)
+
         try:
-            client = RpcClient('localhost', 5500)
-            result = None
 
             with self.assertRaises(NetworkError) as cm:
                 client.rpc_call('echo', 'Hello Server')
 
             self.assertEqual(cm.exception.real_exception, "Non-JSON content received")
         finally:
+            client.close_connection()
             server.stop()
 
 
