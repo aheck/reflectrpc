@@ -124,12 +124,10 @@ class ReflectRpcShell(Cmd):
         if self.service_description:
             self.intro += "\n\nSelf-description of Service:\n============================\n"
             if self.service_description['name']:
-                print()
                 self.intro += self.service_description['name']
                 if self.service_description['version']:
                     self.intro += " (%s)\n" % (self.service_description['version'])
             if self.service_description['description']:
-                print()
                 self.intro += self.service_description['description']
 
     def enable_tls(self):
