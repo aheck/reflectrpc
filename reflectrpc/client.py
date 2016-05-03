@@ -25,6 +25,9 @@ class NetworkError(Exception):
     def __str__(self):
         return "NetworkError: " + str(self.real_exception)
 
+class HttpException(Exception):
+    pass
+
 class RpcError(Exception):
     """
     JSON-RPC error object as received by the client
@@ -236,10 +239,10 @@ class RpcClient(object):
         fields = statusline.split(' ')
 
         if fields[0] != 'HTTP/1.1':
-            raise Exception("Unexpected HTTP version: '%s'" % (fields[0]))
+            raise HttpException("Unexpected HTTP version: '%s'" % (fields[0]))
 
         if fields[1] != '200':
-            raise Exception("Expected status code '200' but got '%s'" % (fields[1]))
+            raise HttpException("Expected status code '200' but got '%s'" % (fields[1]))
 
         content_length = 0
         content_type = ''
@@ -259,10 +262,10 @@ class RpcClient(object):
                 content_encoding = fields[1]
 
         if content_encoding != 'UTF-8':
-            raise Exception("Unsupported content encoding: '%s'" % (content_encoding))
+            raise HttpException("Unsupported content encoding: '%s'" % (content_encoding))
 
         if content_length == 0:
-            return ''
+            raise HttpException("Content length is 0 but expected some content")
 
         remaining_bytes = content_length - len(data)
 

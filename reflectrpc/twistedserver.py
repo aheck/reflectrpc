@@ -46,6 +46,8 @@ class JsonRpcHttpResource(resource.Resource):
     def render_POST(self, request):
         data = request.content.getvalue().decode('utf-8')
         reply = json.dumps(self.rpcprocessor.process_request(data))
+        request.setHeader(b"Content-Type", b"application/json-rpc")
+
         return reply.encode('utf-8')
 
 class TwistedJsonRpcServer(object):
