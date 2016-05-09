@@ -105,6 +105,27 @@ class ClientServerTests(unittest.TestCase):
         self.assertEqual(cm.exception.errno, errno.ENOENT)
         self.assertEqual(cm.exception.filename, '/file/that/does/not/exist')
 
+    def test_twisted_server_tls_server_check(self):
+        server = ServerRunner('../examples/servertls.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+
+        try:
+            client.enable_tls('../examples/certs/wrongCA.crt')
+
+            with self.assertRaises(NetworkError) as cm:
+                result = client.rpc_call('echo', 'Hello Server')
+
+            python2_check = str(cm.exception.real_exception).startswith(
+                    '[Errno 1]')
+            python3_check = str(cm.exception.real_exception).startswith(
+                    '[SSL: CERTIFICATE_VERIFY_FAILED]')
+            self.assertTrue(python2_check or python3_check)
+        finally:
+            client.close_connection()
+            server.stop()
+
     def test_twisted_server_tls_hostname_check(self):
         server = ServerRunner('../examples/servertls.py', 5500)
         server.run()
