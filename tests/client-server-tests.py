@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 from builtins import bytes, dict, list, int, float, str
 
+import errno
 import sys
 import json
 import os
@@ -68,9 +69,10 @@ class ClientServerTests(unittest.TestCase):
         server.run()
 
         client = RpcClient('localhost', 5500)
-        client.enable_tls(None, False)
 
         try:
+            client.enable_tls(None, False)
+
             result = client.rpc_call('echo', 'Hello Server')
 
             self.assertEqual(result, 'Hello Server')
@@ -85,7 +87,6 @@ class ClientServerTests(unittest.TestCase):
         client = RpcClient('localhost', 5500)
 
         try:
-
             with self.assertRaises(NetworkError) as cm:
                 client.rpc_call('echo', 'Hello Server')
 
@@ -94,6 +95,33 @@ class ClientServerTests(unittest.TestCase):
             client.close_connection()
             server.stop()
 
+    def test_twisted_server_tls_cert_file_not_found(self):
+        client = RpcClient('localhost', 5500)
+
+        error = None
+        with self.assertRaises(IOError) as cm:
+            client.enable_tls('/file/that/does/not/exist')
+
+        self.assertEqual(cm.exception.errno, errno.ENOENT)
+        self.assertEqual(cm.exception.filename, '/file/that/does/not/exist')
+
+    def test_twisted_server_tls_hostname_check(self):
+        server = ServerRunner('../examples/servertls.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+
+        try:
+            client.enable_tls('../examples/certs/rootCA.crt')
+
+            with self.assertRaises(NetworkError) as cm:
+                result = client.rpc_call('echo', 'Hello Server')
+
+            self.assertEqual(str(cm.exception.real_exception),
+                    "TLSHostnameError: Host name 'localhost' doesn't match certificate host 'reflectrpc'")
+        finally:
+            client.close_connection()
+            server.stop()
 
 if __name__ == '__main__':
     unittest.main()

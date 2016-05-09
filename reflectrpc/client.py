@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from builtins import bytes, dict, list, int, float, str
 
 import json
+import os.path
 import ssl
 import sys
 import socket
@@ -24,6 +25,17 @@ class NetworkError(Exception):
 
     def __str__(self):
         return "NetworkError: " + str(self.real_exception)
+
+class TLSHostnameError(Exception):
+    """
+    Exception for when the hostname of a server does not match the hostname in the certificate
+    """
+    def __init__(self, hostname, cert_hostname):
+        self.hostname = hostname
+        self.cert_hostname = cert_hostname
+
+    def __str__(self):
+        return "TLSHostnameError: Host name '%s' doesn't match certificate host '%s'" % (self.hostname, self.cert_hostname)
 
 class HttpException(Exception):
     pass
@@ -85,6 +97,9 @@ class RpcClient(object):
         self.tls_enabled = True
         self.ca_file = ca_file
         self.check_hostname = check_hostname
+
+        if self.ca_file:
+            self.__check_ca_file()
 
     def enable_client_auth(self, cert_file):
         """
@@ -187,7 +202,8 @@ class RpcClient(object):
             json_reply = self.receive_response()
 
             return json_reply
-        except (ConnectionRefusedError, socket.error, SSLEOFError) as e:
+        except (ConnectionRefusedError, socket.error, SSLEOFError,
+                TLSHostnameError) as e:
             self.close_connection()
             raise NetworkError(e)
 
@@ -346,15 +362,15 @@ class RpcClient(object):
         """
         Check if the hostname of our server matches with the server cert
         """
-        cert = sock.getpeercert()
+        cert = self.sock.getpeercert()
         for field in cert['subject']:
             if field[0][0] != 'commonName':
                 continue
 
             certhost = field[0][1]
             if certhost != self.host:
-                raise ssl.SSLError("Host name '%s' doesn't match certificate host '%s'"
-                        % (self.host, certhost))
+                self.close_connection()
+                raise TLSHostnameError(self.host, certhost)
 
     def __connect(self):
         """
@@ -362,23 +378,34 @@ class RpcClient(object):
 
         Raises:
             socket.error: If connection attempt fails
-            ssl.SSLError: If server hostname validation failed
+            TLSHostnameError: If server hostname validation failed
         """
         self.sock = None
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(self.timeout)
 
+        sock.connect((self.host, self.port))
+
         if self.tls_enabled:
             if self.ca_file:
-                sock = ssl.wrap_socket(sock, ssl_version=self.tls_version)
-            else:
-                sock = ssl.wrap_socket(sock, ssl_version=self.tls_version,
-                        ca_certs=self.ca_file)
+                self.__check_ca_file()
 
-        sock.connect((self.host, self.port))
+                sock = ssl.wrap_socket(sock,
+                        ssl_version=self.tls_version,
+                        cert_reqs=ssl.CERT_REQUIRED,
+                        ca_certs=self.ca_file
+                )
+            else:
+                sock = ssl.wrap_socket(sock, ssl_version=self.tls_version)
+
+        self.sock = sock
 
         if self.check_hostname:
             self.__check_host_cert()
 
-        self.sock = sock
+    def __check_ca_file(self):
+        # check if ca_file exists and can be read to omit ugly and
+        # confusing OpenSSL error
+        with open(self.ca_file) as f:
+            pass
