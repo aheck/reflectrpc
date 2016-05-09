@@ -358,11 +358,11 @@ class RpcClient(object):
 
         self.sock = None
 
-    def __check_host_cert(self):
+    def __check_host_cert(self, sock):
         """
         Check if the hostname of our server matches with the server cert
         """
-        cert = self.sock.getpeercert()
+        cert = sock.getpeercert()
         for field in cert['subject']:
             if field[0][0] != 'commonName':
                 continue
@@ -396,13 +396,13 @@ class RpcClient(object):
                         cert_reqs=ssl.CERT_REQUIRED,
                         ca_certs=self.ca_file
                 )
+
+                if self.check_hostname:
+                    self.__check_host_cert(sock)
             else:
                 sock = ssl.wrap_socket(sock, ssl_version=self.tls_version)
 
         self.sock = sock
-
-        if self.check_hostname:
-            self.__check_host_cert()
 
     def __check_ca_file(self):
         # check if ca_file exists and can be read to omit ugly and

@@ -71,7 +71,7 @@ class ClientServerTests(unittest.TestCase):
         client = RpcClient('localhost', 5500)
 
         try:
-            client.enable_tls(None, False)
+            client.enable_tls(None)
 
             result = client.rpc_call('echo', 'Hello Server')
 
@@ -143,6 +143,7 @@ class ClientServerTests(unittest.TestCase):
         finally:
             client.close_connection()
             server.stop()
+
 
 if __name__ == '__main__':
     unittest.main()
