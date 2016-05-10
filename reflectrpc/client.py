@@ -101,14 +101,18 @@ class RpcClient(object):
         if self.ca_file:
             self.__check_ca_file()
 
-    def enable_client_auth(self, cert_file):
+    def enable_client_auth(self, cert_file, key_file):
         """
         Enable TLS client authentication
 
         Args:
-            cert_file (str): Path of a PEM file containing server cert and key
+            cert_file (str): Path of a PEM file containing client cert
+            key_file (str): Path of a PEM file containing the client key
         """
         self.tls_client_auth_enabled = True
+
+        self.tls_client_cert = cert_file
+        self.tls_client_key = key_file
 
     def enable_http(self, http_path='/rpc'):
         """
@@ -391,11 +395,20 @@ class RpcClient(object):
             if self.ca_file:
                 self.__check_ca_file()
 
-                sock = ssl.wrap_socket(sock,
-                        ssl_version=self.tls_version,
-                        cert_reqs=ssl.CERT_REQUIRED,
-                        ca_certs=self.ca_file
-                )
+                if self.tls_client_auth_enabled:
+                    sock = ssl.wrap_socket(sock,
+                            ssl_version=self.tls_version,
+                            cert_reqs=ssl.CERT_REQUIRED,
+                            certfile=self.tls_client_cert,
+                            keyfile=self.tls_client_key,
+                            ca_certs=self.ca_file
+                    )
+                else:
+                    sock = ssl.wrap_socket(sock,
+                            ssl_version=self.tls_version,
+                            cert_reqs=ssl.CERT_REQUIRED,
+                            ca_certs=self.ca_file
+                    )
 
                 if self.check_hostname:
                     self.__check_host_cert(sock)

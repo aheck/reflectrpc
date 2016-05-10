@@ -145,5 +145,63 @@ class ClientServerTests(unittest.TestCase):
             server.stop()
 
 
+    def test_twisted_server_tls_client_auth_no_client_cert(self):
+        server = ServerRunner('../examples/servertls_clientauth.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+
+        try:
+            client.enable_tls('../examples/certs/rootCA.crt')
+
+            with self.assertRaises(NetworkError) as cm:
+                result = client.rpc_call('echo', 'Hello Server')
+
+            python2_check = 'alert handshake failure' in str(cm.exception.real_exception)
+            python3_check = str(cm.exception.real_exception).startswith(
+                    "[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE]")
+            self.assertTrue(python2_check or python3_check)
+        finally:
+            client.close_connection()
+            server.stop()
+
+    def test_twisted_server_tls_client_auth(self):
+        server = ServerRunner('../examples/servertls_clientauth.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+
+        try:
+            client.enable_tls('../examples/certs/rootCA.crt', False)
+            client.enable_client_auth('../examples/certs/client.crt',
+                    '../examples/certs/client.key')
+
+            result = client.rpc_call('echo', 'Hello Server')
+
+            self.assertEqual(result, "Hello Server")
+        finally:
+            client.close_connection()
+            server.stop()
+
+    def test_twisted_server_tls_client_auth_wrong_client_cert(self):
+        server = ServerRunner('../examples/servertls_clientauth.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+
+        try:
+            client.enable_tls('../examples/certs/rootCA.crt', False)
+            client.enable_client_auth('../examples/certs/wrong-client.crt',
+                    '../examples/certs/wrong-client.key')
+
+            with self.assertRaises(NetworkError) as cm:
+                result = client.rpc_call('echo', 'Hello Server')
+
+            self.assertTrue('alert decrypt error' in str(cm.exception.real_exception))
+        finally:
+            client.close_connection()
+            server.stop()
+
+
 if __name__ == '__main__':
     unittest.main()
