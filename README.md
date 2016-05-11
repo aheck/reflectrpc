@@ -37,11 +37,11 @@ Connect to the server:
 
 ![rpcsh](/pics/intro.png)
 
-Now you can get a list of RPC functions available on the server:
+Now you can get a list of RPC functions available on the server
 
 ![List remote functions](/pics/list.png)
 
-You can take a look at the documentation of a function and its parameters:
+You can take a look at the documentation of a function and its parameters
 
 ![Show documentation of remote function](/pics/doc.png)
 
@@ -56,6 +56,12 @@ Or send a literal JSON-RPC request to the server
 To get an overview of what *rpcsh* can do just type *help*
 
 ![Help](/pics/help.png)
+
+## Installation ##
+
+```shell
+pip install reflectrpc
+```
 
 ## Datatypes ##
 

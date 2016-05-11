@@ -223,7 +223,7 @@ class ReflectRpcShell(Cmd):
         method = tokens.pop(0)
         try:
             print("Server replied:", self.client.rpc_call(method, *tokens))
-        except reflectrpc.RpcError as e:
+        except RpcError as e:
             print(e)
 
     def do_notify(self, line):
