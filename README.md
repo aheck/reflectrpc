@@ -4,6 +4,18 @@
 
 Creating self-describing RPC services
 
+## Contents
+
+- [What is ReflectRPC? ##](#what-is-reflectrpc-)
+    - [Example ###](#example-)
+- [Installation ##](#installation-)
+- [Datatypes ##](#datatypes-)
+- [Custom Datatypes ##](#custom-datatypes-)
+- [Returning Errors ##](#returning-errors-)
+    - [Example ###](#example-)
+- [License ##](#license-)
+- [Contact ##](#contact-)
+
 ## What is ReflectRPC? ##
 
 ReflectRPC is a Python library implementing an RPC client and server using the JSON-RPC 1.0 protocol. What sets it apart from most other such implementations is that it allows the client to get a comprehensive description of the functions exposed by the server. This includes type information of parameters and return values as well as human readable JavaDoc-like descriptions of all fields. To retrieve this information the client only has to call the special RPC function *\_\_describe\_functions* and it will get a data structure containing the whole description of all RPC functions provided by the server.
