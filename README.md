@@ -6,15 +6,13 @@ Creating self-describing RPC services
 
 ## Contents
 
-- [What is ReflectRPC? ##](#what-is-reflectrpc-)
-    - [Example ###](#example-)
-- [Installation ##](#installation-)
-- [Datatypes ##](#datatypes-)
-- [Custom Datatypes ##](#custom-datatypes-)
-- [Returning Errors ##](#returning-errors-)
-    - [Example ###](#example-)
-- [License ##](#license-)
-- [Contact ##](#contact-)
+- [What is ReflectRPC?](#what-is-reflectrpc)
+- [Installation](#installation)
+- [Datatypes](#datatypes)
+- [Custom Datatypes](#custom-datatypes)
+- [Returning Errors](#returning-errors)
+- [License](#license)
+- [Contact](#contact)
 
 ## What is ReflectRPC? ##
 
