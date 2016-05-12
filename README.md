@@ -43,7 +43,7 @@ server.run()
 ```
 
 Connect to the server:
-> ./rpcsh localhost 5500
+> rpcsh localhost 5500
 
 ![rpcsh](/pics/intro.png)
 
