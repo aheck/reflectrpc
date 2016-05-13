@@ -11,6 +11,7 @@ Creating self-describing RPC services
 - [Datatypes](#datatypes)
 - [Custom Datatypes](#custom-datatypes)
 - [Returning Errors](#returning-errors)
+- [Serving RPCs](#serving-rpcs)
 - [License](#license)
 - [Contact](#contact)
 
@@ -30,15 +31,15 @@ import reflectrpc.simpleserver
 def add(a, b):
     return int(a) + int(b)
 
-jsonrpc = reflectrpc.RpcProcessor()
+rpc = reflectrpc.RpcProcessor()
 
 add_func = reflectrpc.RpcFunction(add, 'add', 'Adds two numbers', 'int',
         'Sum of the two numbers')
 add_func.add_param('int', 'a', 'First int to add')
 add_func.add_param('int', 'b', 'Second int to add')
-jsonrpc.add_function(add_func)
+rpc.add_function(add_func)
 
-server = reflectrpc.simpleserver.SimpleJsonRpcServer(jsonrpc, 'localhost', 5500)
+server = reflectrpc.simpleserver.SimpleJsonRpcServer(rpc, 'localhost', 5500)
 server.run()
 ```
 
@@ -112,9 +113,9 @@ address_hash.add_field('street2', 'string', 'Second address line')
 address_hash.add_field('zipcode', 'string', 'Zip code')
 address_hash.add_field('city', 'string', 'City')
 
-jsonrpc = reflectrpc.RpcProcessor()
-jsonrpc.add_custom_type(phone_type_enum)
-jsonrpc.add_custom_type(address_hash)
+rpc = reflectrpc.RpcProcessor()
+rpc.add_custom_type(phone_type_enum)
+rpc.add_custom_type(address_hash)
 ```
 
 This creates an enum named *PhoneType* and a named hash type to hold street
@@ -189,6 +190,92 @@ While the result of *json_error()* will look like this:
 
 Both results are as expected. You can send back your own errors over JSON-RPC in
 a controlled manner but internal errors are hidden from the client.
+
+## Serving RPCs ##
+
+When you build an RPC service you want to serve it over a network of course.
+To make this as easy as possible ReflectRPC already comes with two different
+server implementations. The first one is named *SimpleJsonRpcServer* and if
+you've read the first example section of this document you've already seen
+some example code. *SimpleJsonRpcServer* is a very simple server that serves
+JSON-RPC requests over a plain TCP socket, with each JSON message being delimited
+by a <CR><LF> linebreak.
+
+That's how it is used:
+
+```python
+import reflectrpc
+import reflectrpc.simpleserver
+
+# create an RpcProcessor object and register your functions
+...
+
+server = reflectrpc.simpleserver.SimpleJsonRpcServer(rpc, 'localhost', 5500)
+server.run()
+```
+
+Since this server only handles one client at a time you only want to use it for
+testing purposes. For production use there is a concurrent server
+implementation that is also much more feature rich. It is based on the Twisted
+framework.
+
+The following example creates a *TwistedJsonRpcServer* that behaves exactly as
+the *SimpleJsonRpcServer* and serves line-delimited JSON-RPC messages over a
+plain TCP socket.
+
+```python
+import reflectrpc
+import reflectrpc.twistedserver
+
+# create an RpcProcessor object and register your functions
+...
+
+server = reflectrpc.twistedserver.TwistedJsonRpcServer(rpc, 'localhost', 5500)
+server.run()
+```
+
+Of course it is powered by Twisted and can handle more than one connection at
+a time. This server also support TLS encryption, TLS client authentication and
+HTTP as an alternative to line-delimited messages.
+
+The following example code creates a *TwistedJsonRpcServer* that serves JSON-RPC
+over HTTP (JSON-RPC message are to be sent as POST requests to '/rpc'). The
+connection is encrypted with TLS and the client has to present a valid
+certificate that is signed by the CA certificate in the file *clientCA.crt*:
+
+```python
+import reflectrpc
+import reflectrpc.twistedserver
+
+# create an RpcProcessor object and register your functions
+...
+
+jsonrpc = rpcexample.build_example_rpcservice()
+server = reflectrpc.twistedserver.TwistedJsonRpcServer(jsonrpc, 'localhost', 5500)
+server.enable_tls('server.pem')
+server.enable_client_auth('clientCA.crt')
+server.enable_http()
+server.run()
+```
+
+If you have custom requirements and want to write your own server that is no
+problem at all. All you have to do is pass the request string you receive from
+your client to the *process_request* method of an *RpcProcessor* object. It
+will the reply as a dictionary or *None* in case of a JSON-RPC notification.
+If you get a dictionary you encode it as JSON and send it back to the client.
+
+```python
+# create an RpcProcessor object and register your functions
+...
+
+reply = rpc.process_request(line)
+
+# in case of a notification request process_request returns None
+# and we send no reply back
+if reply:
+    reply_line = json.dumps(reply)
+    send_data(reply_line.encode("utf-8"))
+```
 
 ## License ##
 
