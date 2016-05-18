@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 from builtins import bytes, dict, list, int, float, str
 
 import json
@@ -105,17 +105,34 @@ class ReflectRpcShell(Cmd):
         self.port = port
 
         self.tls_enabled = False
+        self.tls_hostname_check = False
+        self.ca = None
+        self.http_enabled = False
+        self.http_path = ''
+
+        self.client_auth_cert = None
+        self.client_auth_key = None
 
     def connect(self):
         self.client = RpcClient(self.host, self.port)
+
+        if self.http_enabled:
+            self.client.enable_http(self.http_path)
+
         if self.tls_enabled:
-            self.client.enable_tls(None)
+            self.client.enable_tls(self.ca, self.tls_hostname_check)
+
+        if self.client_auth_cert and self.client_auth_key:
+            self.client.enable_client_auth(self.client_auth_cert,
+                    self.client_auth_key)
 
         try:
             self.retrieve_service_description()
             self.retrieve_functions()
             self.retrieve_custom_types()
         except reflectrpc.client.NetworkError as e:
+            print(e, file=sys.stderr)
+            print('', file=sys.stderr)
             self.connection_failed_error(True)
 
         self.prompt = '(rpc) '
@@ -130,8 +147,18 @@ class ReflectRpcShell(Cmd):
             if self.service_description['description']:
                 self.intro += self.service_description['description']
 
-    def enable_tls(self):
+    def enable_http(self, http_path='/rpc'):
+        self.http_enabled = True
+        self.http_path = http_path
+
+    def enable_tls(self, ca, check_hostname=True):
+        self.ca = ca
         self.tls_enabled = True
+        self.tls_hostname_check = check_hostname
+
+    def enable_client_auth(self, cert_file, key_file):
+        self.client_auth_cert = cert_file
+        self.client_auth_key = key_file
 
     def retrieve_service_description(self):
         self.service_description = ''
