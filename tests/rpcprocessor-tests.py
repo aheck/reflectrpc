@@ -85,6 +85,7 @@ class RpcProcessorTests(unittest.TestCase):
                     'params': [{'name': 'message', 'type': 'string',
                         'description': 'Message to send back'}]
         }]
+        self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], expected)
 
         add_func = RpcFunction(add, 'add', 'Returns the sum of the two parameters',

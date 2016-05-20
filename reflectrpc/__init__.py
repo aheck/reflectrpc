@@ -786,6 +786,7 @@ class RpcProcessor(object):
 
         # check for builtins
         if request['method'] in self.builtins:
+            reply['error'] = None
             reply['result'] = self.builtins[request['method']]()
             return reply
 
