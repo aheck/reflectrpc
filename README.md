@@ -8,10 +8,12 @@ Creating self-describing RPC services
 
 - [What is ReflectRPC?](#what-is-reflectrpc)
 - [Installation](#installation)
+- [Features](#features)
 - [Datatypes](#datatypes)
 - [Custom Datatypes](#custom-datatypes)
 - [Returning Errors](#returning-errors)
 - [Serving RPCs](#serving-rpcs)
+- [Supported Python Versions](#supported-python-versions)
 - [License](#license)
 - [Contact](#contact)
 
@@ -86,6 +88,22 @@ To get an overview of what *rpcsh* can do just type *help*:
 ```shell
 pip install reflectrpc
 ```
+
+## Features ##
+
+- JSON-RPC 1.0 (it doesn't get any more simple than that)
+- Registration and documentation of RPC calls is done in one place
+- Type checking
+- Special RPC calls allow to get descriptions of the service, available
+    functions, and custom types
+- Interactive shell (*rpcsh*) to explore an RPC service and call its functions
+- Baseclass for exceptions that are to be serialized and replied to the
+    caller while all other exceptions are suppressed as internal errors
+- Custom types enum and named hashes (like structs in C)
+- Protocol implementation is easily reusable in custom servers
+- Twisted-based server that supports line-based plain sockets, HTTP, TLS, and
+    TLS client auth
+- Client that supports line-based plain sockets, HTTP, TLS, and TLS client auth
 
 ## Datatypes ##
 
@@ -289,6 +307,17 @@ if reply:
     reply_line = json.dumps(reply)
     send_data(reply_line.encode("utf-8"))
 ```
+
+## Suppported Python Versions ##
+
+ReflectRPC supports the following Python versions:
+
+- CPython 2.7
+- CPython 3.3
+- CPython 3.4
+- CPython 3.5
+
+Current versions of PyPy should work, too.
 
 ## License ##
 
