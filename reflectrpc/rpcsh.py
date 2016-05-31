@@ -37,7 +37,6 @@ def print_functions(functions):
 
 def split_exec_line(line):
     tokens = []
-    inquotes = False
     curtoken = ''
     intoken = False
     instring = False
