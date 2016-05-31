@@ -308,7 +308,7 @@ if reply:
     send_data(reply_line.encode("utf-8"))
 ```
 
-## Suppported Python Versions ##
+## Supported Python Versions ##
 
 ReflectRPC supports the following Python versions:
 
@@ -317,7 +317,7 @@ ReflectRPC supports the following Python versions:
 - CPython 3.4
 - CPython 3.5
 
-Current versions of PyPy should work, too.
+Current versions of PyPy should also work.
 
 ## License ##
 
