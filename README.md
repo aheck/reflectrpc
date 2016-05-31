@@ -36,6 +36,12 @@ server and display the results. If the server implements the
 *\_\_describe\_functions* interface it can also list all RPC functions provided
 by the server and show a description of the functions and their parameters.
 
+ReflectRPC does not change the JSON-RPC 1.0 protocol in any way and strives to
+be as compatible as possible. It only adds some special builtin RPC calls to
+your service to make it self-describing. That way any JSON-RPC 1.0 compliant
+client can talk to it while a client aware of ReflectRPC can access the extra
+features it provides.
+
 ### Example ###
 
 Write a function and register it (including its documentation):
