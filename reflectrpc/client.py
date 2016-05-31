@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from builtins import bytes, dict, list, int, float, str
 
+import base64
 import json
 import os.path
 import ssl
@@ -86,6 +87,9 @@ class RpcClient(object):
 
         self.http_enabled = False
         self.http_path = None
+        self.http_basic_auth = False
+        self.http_basic_username = None
+        self.http_basic_password = None
 
     def enable_tls(self, ca_file, check_hostname=True):
         """
@@ -123,6 +127,21 @@ class RpcClient(object):
         """
         self.http_enabled = True
         self.http_path = http_path
+
+    def enable_http_basic_auth(self, username, password):
+        """
+        Enable basic authentication for HTTP with username and password
+
+        You should use this authentication method only with TLS enabled because
+        the password is not encrypted by basic HTTP authentication
+
+        Args:
+            username (str): Username to authenticate with
+            password (str): Password to authenticate with (will not be encrypted)
+        """
+        self.http_basic_auth = True
+        self.http_basic_username = username
+        self.http_basic_password = password
 
     def is_connected(self):
         """
@@ -221,6 +240,11 @@ class RpcClient(object):
                     'Content-Type: application/json-rpc',
                     'Content-Length: %d' % (len(data))
             ]
+
+            if self.http_basic_auth:
+                auth_token = base64.b64encode(self.http_basic_username + ':' + self.http_basic_password)
+                auth_header = "Authorization: Basic " + auth_token
+                http_headers.append(auth_header)
 
             header = '\r\n'.join(http_headers) + '\r\n\r\n'
             header = header.encode('utf-8')
