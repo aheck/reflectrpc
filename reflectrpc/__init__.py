@@ -4,6 +4,8 @@ from builtins import bytes, dict, list, int, float, str
 import json
 import traceback
 
+version = '0.7.2'
+
 json_types = ['int', 'bool', 'float', 'string', 'array', 'hash', 'base64']
 
 def isstring(value):

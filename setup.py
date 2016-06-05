@@ -2,15 +2,15 @@ from setuptools import setup
 
 setup(name = 'reflectrpc',
       packages = ['reflectrpc'],
-      version = '0.7.1',
+      version = '0.7.2',
       description = 'JSON-RPC library for creating self-describing RPC services',
       author = 'Andreas Heck',
       author_email = 'aheck@gmx.de',
       license = 'MIT',
       url = 'https://github.com/aheck/reflectrpc',
-      download_url = 'https://github.com/aheck/reflectrpc/archive/v0.7.1.tar.gz',
+      download_url = 'https://github.com/aheck/reflectrpc/archive/v0.7.2.tar.gz',
       keywords = ['json-rpc', 'json', 'rpc', 'webservice'],
-      scripts = ['rpcsh'],
+      scripts = ['rpcsh', 'rpcdoc'],
       install_requires = ['future', 'service_identity', 'twisted', 'pyOpenSSL'],
       classifiers = [
           'Development Status :: 4 - Beta',
