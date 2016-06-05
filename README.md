@@ -13,6 +13,7 @@ Creating self-describing RPC services
 - [Custom Datatypes](#custom-datatypes)
 - [Returning Errors](#returning-errors)
 - [Serving RPCs](#serving-rpcs)
+- [Generating Documentation](#generating-documentation)
 - [Supported Python Versions](#supported-python-versions)
 - [License](#license)
 - [Contact](#contact)
@@ -111,7 +112,7 @@ install it with a single:
 - Twisted-based server that supports line-based plain sockets, HTTP, TLS, and
     TLS client auth
 - Client that supports line-based plain sockets, HTTP, TLS, and TLS client auth
-- Tool (*rpcdoc*) to create HTML documentation from a running RPC service
+- Create HTML documentation from a running RPC service by using the program *rpcdoc*
 
 ## Datatypes ##
 
@@ -315,6 +316,18 @@ if reply:
     reply_line = json.dumps(reply)
     send_data(reply_line.encode("utf-8"))
 ```
+
+## Generating Documentation ##
+
+To generate HTML documentation for a running service just call *rpcdoc* from the
+commandline and tell it which server to connect to and where to write its
+output:
+
+> rpcdoc localhost 5500 doc.html
+
+It will output some formatted HTML documentation of your service:
+
+![HTML Documentation](/pics/htmldocs.png)
 
 ## Supported Python Versions ##
 
