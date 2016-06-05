@@ -92,8 +92,8 @@ To get an overview of what *rpcsh* can do just type *help*:
 
 ## Installation ##
 
-ReflectRPC is available in the Python Package Index. Therefore you can simply
-install it with a single:
+ReflectRPC is available in the Python Package Index. Therefore you can easily
+install it with a single command:
 
 > pip install reflectrpc
 

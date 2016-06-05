@@ -13,7 +13,7 @@ for f in files:
     if not f.endswith('.py') or f == 'runall.py': continue
 
     print(f)
-    print()
+    print('')
     status = os.system("%s %s" % (python, f))
     if status != 0:
         exit_status = 1

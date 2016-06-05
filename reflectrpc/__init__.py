@@ -220,7 +220,7 @@ class JsonEnumType(object):
         """
         result = self.resolve_to_intvalue(value)
 
-        if result == None:
+        if result is None:
             return False
 
         return True
@@ -301,7 +301,7 @@ class JsonEnumType(object):
             ValueError: If value is neither interger or string
         """
         if isstring(value):
-            if self.resolve_name(value) != None:
+            if self.resolve_name(value) is not None:
                 return value
         elif type(value).__name__ == 'int':
             return self.resolve_intvalue(value)
@@ -389,7 +389,7 @@ class JsonHashType(object):
         Raises:
             ValueError: If typ is not a valid type
         """
-        if not typ in json_types and not typ[0].isupper():
+        if typ not in json_types and not typ[0].isupper():
             raise ValueError("Invalid JSON-RPC type: %s" % (typ))
 
         field = {}
@@ -437,7 +437,7 @@ class RpcFunction(object):
         Raises:
             ValueError: If result_type is an invalid type or func is not a callable
         """
-        if not result_type in json_types and not result_type[0].isupper():
+        if result_type not in json_types and not result_type[0].isupper():
             raise ValueError("Invalid JSON-RPC type: %s" % (result_type))
 
         if not callable(func):
@@ -534,7 +534,7 @@ class RpcProcessor(object):
         self.py2json = {'bool': 'bool', 'int': 'int', 'float': 'float', 'str':
                 'string', 'list': 'array', 'dict': 'hash'}
 
-    def set_description(self, name, description, version, custom_fields = {}):
+    def set_description(self, name, description, version, custom_fields = None):
         """
         Set the description of this RPC service
 
@@ -547,6 +547,10 @@ class RpcProcessor(object):
         self.description['name'] = name
         self.description['description'] = description
         self.description['version'] = version
+
+        if custom_fields is None:
+            custom_fields = {}
+
         self.description['custom_fields'] = custom_fields
 
     def add_custom_type(self, custom_type):
@@ -594,7 +598,7 @@ class RpcProcessor(object):
         if func.name in self.functions_dict:
             raise ValueError("Another function of the name '%s' is already registered" % (func.name))
 
-        if func.result_type[0].isupper() and not func.result_type in self.custom_types_dict.keys():
+        if func.result_type[0].isupper() and func.result_type not in self.custom_types_dict.keys():
             raise ValueError("Unknown custom type: '%s'" % (func.result_type))
 
         for param in func.params:
@@ -755,18 +759,18 @@ class RpcProcessor(object):
             reply['error'] = error.to_dict()
             return reply
 
-        if not 'id' in request.keys():
+        if 'id' not in request.keys():
             reply['id'] = -1
             error = JsonRpcInvalidRequest("Field 'id' missing in request")
             reply['error'] = error.to_dict()
             return reply
 
-        if request['id'] == None:
+        if request['id'] is None:
             notify_request = True
         else:
             reply['id'] = request['id']
 
-        if not 'method' in request.keys():
+        if 'method' not in request.keys():
             error = JsonRpcInvalidRequest("Field 'method' missing in request")
             reply['error'] = error.to_json()
             return reply
@@ -776,7 +780,7 @@ class RpcProcessor(object):
             reply['error'] = error.to_dict()
             return reply
 
-        if not 'params' in request.keys():
+        if 'params' not in request.keys():
             error = JsonRpcInvalidRequest("Field 'params' missing in request")
             reply['error'] = error.to_dict()
             return reply
