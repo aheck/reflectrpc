@@ -92,7 +92,7 @@ To get an overview of what *rpcsh* can do just type *help*:
 ## Installation ##
 
 ReflectRPC is available in the Python Package Index. Therefore you can simply
-install it with one command:
+install it with a single:
 
 > pip install reflectrpc
 
@@ -111,7 +111,7 @@ install it with one command:
 - Twisted-based server that supports line-based plain sockets, HTTP, TLS, and
     TLS client auth
 - Client that supports line-based plain sockets, HTTP, TLS, and TLS client auth
-- Tool (*rpcdoc*) to create HTML documentation from running RPC service
+- Tool (*rpcdoc*) to create HTML documentation from a running RPC service
 
 ## Datatypes ##
 
