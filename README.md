@@ -298,6 +298,8 @@ server.enable_http()
 server.run()
 ```
 
+### Custom Servers ###
+
 If you have custom requirements and want to write your own server that is no
 problem at all. All you have to do is pass the request string you receive from
 your client to the *process_request* method of an *RpcProcessor* object. It
@@ -317,6 +319,47 @@ if reply:
     send_data(reply_line.encode("utf-8"))
 ```
 
+### Authentication ###
+
+Some protocols like e.g. TLS with client authentication allow to authenticate
+the client. Normally, your RPC functions have no idea about in what context
+they are called so they also know nothing about authentication. You can change
+this by calling the method *require_rpcinfo* on your *RpcFunction* object. Your
+function will then be called with a Python dict called *rpcinfo* as its first
+parameter which provides your RPC function with some context information:
+
+```python
+def whoami(rpcinfo):
+    if rpcinfo['authenticated']:
+        return "Username: " + rpcinfo['username']
+
+    return 'Not logged in'
+
+func = RpcFunction(whoami, 'whoami', 'Returns login information',
+        'string', 'Login information')
+func.require_rpcinfo()
+```
+
+Of course your function has to declare a first parameter for the *rpcinfo* dict.
+
+You can also use *rpcinfo* in a custom server to pass your own context
+information. Just call *process_request* with your custom *rpcinfo* dict as a
+second parameter.
+
+```python
+rpcinfo = {
+    'authenticated': False,
+    'username': None,
+    'mydata': 'SOMEUSERDATA'
+}
+
+reply = rpc.process_request(line, rpcinfo)
+```
+
+This dict will then be passed to every RPC function that declared that it wants
+to get the *rpcinfo* dict while all other RPC functions will know nothing about
+it.
+
 ## Generating Documentation ##
 
 To generate HTML documentation for a running service just call *rpcdoc* from the
@@ -325,7 +368,7 @@ output:
 
 > rpcdoc localhost 5500 doc.html
 
-It will output some formatted HTML documentation of your service:
+It will output some formatted HTML documentation for your service:
 
 ![HTML Documentation](/pics/htmldocs.png)
 

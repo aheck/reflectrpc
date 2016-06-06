@@ -33,6 +33,10 @@ def notify():
     global notify_was_called
     notify_was_called = True
 
+def authcheck(rpcinfo):
+    reply = 'Authenticated: %s; Username: %s' % (rpcinfo['authenticated'], rpcinfo['username'])
+    return reply
+
 def echo_array(a):
     return a
 
@@ -544,6 +548,20 @@ class RpcProcessorTests(unittest.TestCase):
         }
 
         self.assertEqual(rpc.describe_service(), expected_desc)
+
+    def test_authcheck(self):
+        rpc = RpcProcessor()
+
+        func = RpcFunction(authcheck, 'authcheck', 'Returns rpcinfo content as string',
+                'string', 'Returns a string to prove we got the authentication information')
+        func.require_rpcinfo()
+
+        rpc.add_function(func)
+        rpcinfo = {'authenticated': True, 'username': 'unittest'}
+        reply = rpc.process_request('{"method": "authcheck", "params": [], "id": 1}',
+                rpcinfo)
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], 'Authenticated: True; Username: unittest')
 
 
 if __name__ == '__main__':

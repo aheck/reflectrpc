@@ -452,6 +452,7 @@ class RpcFunction(object):
         self.params = []
 
         self.type_checks_enabled = True
+        self.requires_rpcinfo = False
 
     def add_param(self, typ, name, description):
         """
@@ -470,6 +471,9 @@ class RpcFunction(object):
 
         param = {'name': name, 'type': typ, 'description': description}
         self.params.append(param)
+
+    def require_rpcinfo(self):
+        self.requires_rpcinfo = True
 
     def to_dict(self):
         """
@@ -637,11 +641,18 @@ class RpcProcessor(object):
         """
         return [custom_type.to_dict() for custom_type in self.custom_types]
 
-    def call_function(self, name, func, func_desc, *params):
+    def call_function(self, rpcfunction, rpcinfo, *params):
         """
         Execute the actual function
+
+        Params:
+            rpcfunction (RpcFunction): RPC function object representing a function
+            rpcinfo (dict): Additional information to pass to the function
         """
-        return func(*params)
+        if rpcfunction.requires_rpcinfo:
+            return rpcfunction.func(rpcinfo, *params)
+
+        return rpcfunction.func(*params)
 
     def check_request_types(self, func, params):
         """
@@ -729,7 +740,7 @@ class RpcProcessor(object):
         elif real_type != self.json2py[declared_type]:
             raise InvalidPrimitiveTypeError(name, declared_type, self.py2json[real_type])
 
-    def process_request(self, message):
+    def process_request(self, message, rpcinfo = None):
         """
         Process a JSON-RPC request
 
@@ -740,6 +751,8 @@ class RpcProcessor(object):
 
         Args:
             message (str): The JSON-RPC request sent by the client
+            rpcinfo (dict): A dictionary used to pass additional information to
+                            the RPC function (e.g. authentication information)
 
         Returns:
             dict: JSON-RPC reply for the client
@@ -750,6 +763,9 @@ class RpcProcessor(object):
         reply['result'] = None
         # Notification requests expect no answer
         notify_request = False
+
+        if rpcinfo is None:
+            rpcinfo = {'authenticated': False, 'username': None}
 
         try:
             request = json.loads(message)
@@ -811,7 +827,7 @@ class RpcProcessor(object):
                     try:
                         if func_desc.type_checks_enabled:
                             self.check_request_types(func_desc, request['params'])
-                        self.call_function(func_desc.name, func, func_desc, *request['params'])
+                        self.call_function(func_desc, rpcinfo, *request['params'])
                     except Exception as e:
                         traceback.print_exc()
 
@@ -822,14 +838,13 @@ class RpcProcessor(object):
 
                 if notify_request:
                     try:
-                        self.call_function(func_desc.name, func, func_desc, *request['params'])
+                        self.call_function(func_desc, rpcinfo, *request['params'])
                     except:
                         pass
 
                     return None
 
-                reply['result'] = self.call_function(func_desc.name, func,
-                        func_desc, *request['params'])
+                reply['result'] = self.call_function(func_desc, rpcinfo, *request['params'])
             except JsonRpcError as e:
                 reply['error'] = e.to_dict()
                 reply['result'] = None
