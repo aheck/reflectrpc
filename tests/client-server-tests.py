@@ -202,6 +202,47 @@ class ClientServerTests(unittest.TestCase):
             client.close_connection()
             server.stop()
 
+    def test_twisted_server_tls_client_auth_username(self):
+        server = ServerRunner('../examples/servertls_clientauth.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+
+        try:
+            client.enable_tls('../examples/certs/rootCA.crt', False)
+            client.enable_client_auth('../examples/certs/client.crt',
+                    '../examples/certs/client.key')
+
+            authenticated = client.rpc_call('is_authenticated')
+            username = client.rpc_call('get_username')
+
+            self.assertEqual(authenticated, True)
+            self.assertEqual(username, 'example-username')
+        finally:
+            client.close_connection()
+            server.stop()
+
+    def test_twisted_server_tls_client_auth_username_http(self):
+        server = ServerRunner('../examples/servertls_clientauth_http.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+        client.enable_http()
+
+        try:
+            client.enable_tls('../examples/certs/rootCA.crt', False)
+            client.enable_client_auth('../examples/certs/client.crt',
+                    '../examples/certs/client.key')
+
+            authenticated = client.rpc_call('is_authenticated')
+            username = client.rpc_call('get_username')
+
+            self.assertEqual(authenticated, True)
+            self.assertEqual(username, 'example-username')
+        finally:
+            client.close_connection()
+            server.stop()
+
 
 if __name__ == '__main__':
     unittest.main()

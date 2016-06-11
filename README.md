@@ -331,7 +331,7 @@ parameter which provides your RPC function with some context information:
 ```python
 def whoami(rpcinfo):
     if rpcinfo['authenticated']:
-        return "Username: " + rpcinfo['username']
+        return 'Username: ' + rpcinfo['username']
 
     return 'Not logged in'
 
@@ -340,11 +340,12 @@ func = RpcFunction(whoami, 'whoami', 'Returns login information',
 func.require_rpcinfo()
 ```
 
-Of course your function has to declare a first parameter for the *rpcinfo* dict.
+Of course your function has to declare an additional parameter for the
+*rpcinfo* dict.
 
 You can also use *rpcinfo* in a custom server to pass your own context
 information. Just call *process_request* with your custom *rpcinfo* dict as a
-second parameter.
+second parameter:
 
 ```python
 rpcinfo = {

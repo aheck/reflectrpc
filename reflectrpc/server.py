@@ -11,7 +11,7 @@ class AbstractJsonRpcServer(object):
     """
     __metaclass__=ABCMeta
 
-    def __init__(self, rpcprocessor, conn):
+    def __init__(self, rpcprocessor, conn, rpcinfo=None):
         """
         Constructor
 
@@ -23,6 +23,7 @@ class AbstractJsonRpcServer(object):
         self.buf = ''
         self.rpcprocessor = rpcprocessor
         self.conn = conn
+        self.rpcinfo = rpcinfo
 
     def data_received(self, data):
         self.buf += data.decode('utf-8')
@@ -33,7 +34,7 @@ class AbstractJsonRpcServer(object):
 
             for i in range(count):
                 line = lines.pop(0)
-                reply = self.rpcprocessor.process_request(line)
+                reply = self.rpcprocessor.process_request(line, self.rpcinfo)
 
                 # in case of a notification request process_request returns None
                 # and we send no reply back

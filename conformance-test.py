@@ -86,7 +86,17 @@ class ConformanceTest(unittest.TestCase):
                           'name': 'value',
                           'type': 'string'}],
                       'result_desc': '',
-                      'result_type': 'bool'}]
+                      'result_type': 'bool'},
+              {'description': 'Checks if we have an authenticated connection',
+                      'name': 'is_authenticated',
+                      'params': [],
+                      'result_desc': 'The authentication status',
+                      'result_type': 'bool'},
+              {'description': 'Gets the username of the logged in user',
+                      'name': 'get_username',
+                      'params': [],
+                      'result_desc': 'The username of the logged in user',
+                      'result_type': 'string'}]
 
         types_description = [{'description': 'Type of a phone number',
                   'name': 'PhoneType',

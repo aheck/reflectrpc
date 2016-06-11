@@ -28,7 +28,16 @@ class JsonRpcProtocol(Protocol):
 
     def dataReceived(self, data):
         if not hasattr(self, 'server'):
-            self.server = JsonRpcServer(self.factory.rpcprocessor, self.transport)
+            rpcinfo = None
+
+            if self.factory.tls_client_auth_enabled:
+                self.username = self.transport.getPeerCertificate().get_subject().commonName
+                rpcinfo = {}
+                rpcinfo['authenticated'] = True
+                rpcinfo['username'] = self.username
+
+            self.server = JsonRpcServer(self.factory.rpcprocessor,
+                    self.transport, rpcinfo)
 
         self.server.data_received(data)
 
@@ -38,14 +47,23 @@ class JsonRpcProtocolFactory(Factory):
     """
     protocol = JsonRpcProtocol
 
-    def __init__(self, rpcprocessor):
+    def __init__(self, rpcprocessor, tls_client_auth_enabled):
         self.rpcprocessor = rpcprocessor
+        self.tls_client_auth_enabled = tls_client_auth_enabled
 
 class JsonRpcHttpResource(resource.Resource):
     isLeaf = True
     def render_POST(self, request):
+        rpcinfo = None
+
+        if self.tls_client_auth_enabled:
+            self.username = request.transport.getPeerCertificate().get_subject().commonName
+            rpcinfo = {}
+            rpcinfo['authenticated'] = True
+            rpcinfo['username'] = self.username
+
         data = request.content.getvalue().decode('utf-8')
-        reply = json.dumps(self.rpcprocessor.process_request(data))
+        reply = json.dumps(self.rpcprocessor.process_request(data, rpcinfo))
         request.setHeader(b"Content-Type", b"application/json-rpc")
 
         return reply.encode('utf-8')
@@ -120,9 +138,11 @@ class TwistedJsonRpcServer(object):
             root = JsonRpcHttpResource()
             root.putChild('rpc', root)
             root.rpcprocessor = self.rpcprocessor
+            root.tls_client_auth_enabled = self.tls_client_auth_enabled
             f = server.Site(root)
         else:
-            f = JsonRpcProtocolFactory(self.rpcprocessor)
+            f = JsonRpcProtocolFactory(self.rpcprocessor,
+                    self.tls_client_auth_enabled)
 
         if self.tls_enabled:
             if not self.tls_client_auth_enabled:

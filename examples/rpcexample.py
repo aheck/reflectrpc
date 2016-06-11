@@ -27,6 +27,12 @@ def enum_echo(phone_type):
 def hash_echo(address_hash):
     return address_hash
 
+def is_authenticated(rpcinfo):
+    return rpcinfo['authenticated']
+
+def get_username(rpcinfo):
+    return rpcinfo['username']
+
 def build_example_rpcservice():
     phone_type_enum = reflectrpc.JsonEnumType('PhoneType', 'Type of a phone number')
     phone_type_enum.add_value('HOME', 'Home phone')
@@ -93,5 +99,17 @@ def build_example_rpcservice():
             'bool', '')
     notify_func.add_param('string', 'value', 'A value to print on the server side')
     jsonrpc.add_function(notify_func)
+
+    authenticated_func = reflectrpc.RpcFunction(is_authenticated, 'is_authenticated',
+            'Checks if we have an authenticated connection',
+            'bool', 'The authentication status')
+    authenticated_func.require_rpcinfo()
+    jsonrpc.add_function(authenticated_func)
+
+    username_func = reflectrpc.RpcFunction(get_username, 'get_username',
+            'Gets the username of the logged in user',
+            'string', 'The username of the logged in user')
+    username_func.require_rpcinfo()
+    jsonrpc.add_function(username_func)
 
     return jsonrpc
