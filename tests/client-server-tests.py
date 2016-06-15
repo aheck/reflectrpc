@@ -243,6 +243,24 @@ class ClientServerTests(unittest.TestCase):
             client.close_connection()
             server.stop()
 
+    def test_twisted_server_http_basic_auth(self):
+        server = ServerRunner('../examples/serverhttp_basic_auth.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+        client.enable_http()
+        client.enable_http_basic_auth('testuser', '123456')
+
+        try:
+            authenticated = client.rpc_call('is_authenticated')
+            username = client.rpc_call('get_username')
+
+            self.assertEqual(authenticated, True)
+            self.assertEqual(username, 'testuser')
+        finally:
+            client.close_connection()
+            server.stop()
+
 
 if __name__ == '__main__':
     unittest.main()

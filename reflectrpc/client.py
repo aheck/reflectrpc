@@ -242,8 +242,9 @@ class RpcClient(object):
             ]
 
             if self.http_basic_auth:
-                auth_token = base64.b64encode(self.http_basic_username + ':' + self.http_basic_password)
-                auth_header = "Authorization: Basic " + auth_token
+                str_token = self.http_basic_username + ':' + self.http_basic_password
+                auth_token = base64.b64encode(str_token.encode('utf-8'))
+                auth_header = "Authorization: Basic " + auth_token.decode('utf-8')
                 http_headers.append(auth_header)
 
             header = '\r\n'.join(http_headers) + '\r\n\r\n'

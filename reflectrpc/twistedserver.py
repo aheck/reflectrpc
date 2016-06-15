@@ -5,6 +5,12 @@ import os
 import sys
 import json
 
+from zope.interface import implementer
+from twisted.internet import defer
+from twisted.web.guard import HTTPAuthSessionWrapper
+from twisted.web.guard import BasicCredentialFactory
+from twisted.cred import portal, checkers, credentials, error as credError
+from twisted.web.resource import IResource
 from twisted.web import server, resource
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor, ssl
@@ -18,6 +24,37 @@ class JsonRpcServer(reflectrpc.server.AbstractJsonRpcServer):
     """
     def send_data(self, data):
         self.conn.write(data)
+
+class PasswordChecker:
+    credentialInterfaces = (credentials.IUsernamePassword,)
+    @implementer(checkers.ICredentialsChecker)
+
+    def __init__(self, check_function):
+        """
+        Constructor
+
+        Args:
+            check_function (callable): A callable that checks a username and a
+                                       password
+        """
+        self.check_function = check_function
+
+    def requestAvatarId(self, credentials):
+        if self.check_function(credentials.username, credentials.password):
+            return defer.succeed(credentials.username)
+        else:
+            return defer.fail(credError.UnauthorizedLogin("Login failed"))
+
+class HttpPasswordRealm(object):
+    @implementer(portal.IRealm)
+
+    def __init__(self, resource):
+        self.resource = resource
+
+    def requestAvatar(self, credentials, mind, *interfaces):
+        if IResource in interfaces:
+            return (IResource, self.resource, lambda: None)
+        raise NotImplementedError()
 
 class JsonRpcProtocol(Protocol):
     """
@@ -53,6 +90,10 @@ class JsonRpcProtocolFactory(Factory):
 
 class JsonRpcHttpResource(resource.Resource):
     isLeaf = True
+
+    def __init__(self):
+        resource.Resource.__init__(self)
+
     def render_POST(self, request):
         rpcinfo = None
 
@@ -61,6 +102,10 @@ class JsonRpcHttpResource(resource.Resource):
             rpcinfo = {}
             rpcinfo['authenticated'] = True
             rpcinfo['username'] = self.username
+        elif request.getUser():
+            rpcinfo = {}
+            rpcinfo['authenticated'] = True
+            rpcinfo['username'] = request.getUser().decode('utf-8')
 
         data = request.content.getvalue().decode('utf-8')
         reply = json.dumps(self.rpcprocessor.process_request(data, rpcinfo))
@@ -90,6 +135,8 @@ class TwistedJsonRpcServer(object):
         self.cert = None
         self.client_auth_ca = None
         self.http_enabled = False
+        self.http_basic_auth_enabled = False
+        self.passwdCheckFunction = None
 
     def enable_tls(self, pem_file):
         """
@@ -128,6 +175,18 @@ class TwistedJsonRpcServer(object):
         """
         self.http_enabled = True
 
+    def enable_http_basic_auth(self, passwdCheckFunction):
+        """
+        Enables HTTP Basic Auth
+
+        Args:
+            passwdCheckFunction (callable): Takes a username and a password as
+                                            argument and checks if they are
+                                            valid
+        """
+        self.http_basic_auth_enabled = True
+        self.passwdCheckFunction = passwdCheckFunction
+
     def run(self):
         """
         Start the server and listen on host:port
@@ -135,10 +194,22 @@ class TwistedJsonRpcServer(object):
         f = None
 
         if self.http_enabled:
-            root = JsonRpcHttpResource()
-            root.putChild('rpc', root)
-            root.rpcprocessor = self.rpcprocessor
-            root.tls_client_auth_enabled = self.tls_client_auth_enabled
+            rpc = JsonRpcHttpResource()
+            rpc.rpcprocessor = self.rpcprocessor
+            rpc.tls_client_auth_enabled = self.tls_client_auth_enabled
+
+            root = rpc
+
+            if self.http_basic_auth_enabled:
+                checker = PasswordChecker(self.passwdCheckFunction)
+                realm = HttpPasswordRealm(rpc)
+                p = portal.Portal(realm, [checker])
+
+                credentialFactory = BasicCredentialFactory('Reflect RPC')
+                rpc = HTTPAuthSessionWrapper(p, [credentialFactory])
+
+            root.putChild('rpc', rpc)
+
             f = server.Site(root)
         else:
             f = JsonRpcProtocolFactory(self.rpcprocessor,
