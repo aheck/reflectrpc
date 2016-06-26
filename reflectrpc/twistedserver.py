@@ -25,7 +25,7 @@ class JsonRpcServer(reflectrpc.server.AbstractJsonRpcServer):
     def send_data(self, data):
         self.conn.write(data)
 
-class PasswordChecker:
+class PasswordChecker(object):
     credentialInterfaces = (credentials.IUsernamePassword,)
     @implementer(checkers.ICredentialsChecker)
 
@@ -194,18 +194,23 @@ class TwistedJsonRpcServer(object):
         f = None
 
         if self.http_enabled:
+            root = resource.Resource()
+
             rpc = JsonRpcHttpResource()
             rpc.rpcprocessor = self.rpcprocessor
             rpc.tls_client_auth_enabled = self.tls_client_auth_enabled
 
-            root = rpc
+            # stupid workaround for Python 3
+            # otherwise the resource cannot be found
+            if sys.version_info.major >= 3:
+                root = rpc
 
             if self.http_basic_auth_enabled:
                 checker = PasswordChecker(self.passwdCheckFunction)
                 realm = HttpPasswordRealm(rpc)
                 p = portal.Portal(realm, [checker])
 
-                credentialFactory = BasicCredentialFactory('Reflect RPC')
+                credentialFactory = BasicCredentialFactory(b'Reflect RPC')
                 rpc = HTTPAuthSessionWrapper(p, [credentialFactory])
 
             root.putChild('rpc', rpc)

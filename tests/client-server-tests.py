@@ -14,6 +14,7 @@ sys.path.append('..')
 from reflectrpc.client import RpcClient
 from reflectrpc.client import RpcError
 from reflectrpc.client import NetworkError
+from reflectrpc.client import HttpException
 from reflectrpc.testing import ServerRunner
 
 class ClientServerTests(unittest.TestCase):
@@ -260,6 +261,70 @@ class ClientServerTests(unittest.TestCase):
         finally:
             client.close_connection()
             server.stop()
+
+    def test_twisted_server_http_basic_auth_no_password(self):
+        if sys.version_info.major >= 3:
+            print("Test doesn't run with Python 3 because of Twisted incompatibilities")
+            return
+
+        server = ServerRunner('../examples/serverhttp_basic_auth.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+        client.enable_http()
+
+        try:
+            with self.assertRaises(HttpException) as cm:
+                client.rpc_call('is_authenticated')
+
+            self.assertEqual(str(cm.exception), "Expected status code '200' but got '401'")
+        finally:
+            client.close_connection()
+            server.stop()
+
+    def test_twisted_server_http_basic_auth_wrong_username(self):
+        # Test doesn't run with Python 3 because of Twisted incompatibilities
+        if sys.version_info.major >= 3:
+            print("Test doesn't run with Python 3 because of Twisted incompatibilities")
+            return
+
+        server = ServerRunner('../examples/serverhttp_basic_auth.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+        client.enable_http()
+        client.enable_http_basic_auth('test', '123456')
+
+        try:
+            with self.assertRaises(HttpException) as cm:
+                client.rpc_call('is_authenticated')
+
+            self.assertEqual(str(cm.exception), "Expected status code '200' but got '401'")
+        finally:
+            client.close_connection()
+            server.stop()
+
+    def test_twisted_server_http_basic_auth_wrong_password(self):
+        if sys.version_info.major >= 3:
+            print("Test doesn't run with Python 3 because of Twisted incompatibilities")
+            return
+
+        server = ServerRunner('../examples/serverhttp_basic_auth.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+        client.enable_http()
+        client.enable_http_basic_auth('testuser', 'wrongpassword')
+
+        try:
+            with self.assertRaises(HttpException) as cm:
+                client.rpc_call('is_authenticated')
+
+            self.assertEqual(str(cm.exception), "Expected status code '200' but got '401'")
+        finally:
+            client.close_connection()
+            server.stop()
+
 
 
 if __name__ == '__main__':
