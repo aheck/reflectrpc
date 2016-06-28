@@ -11,6 +11,7 @@ from twisted.web.guard import HTTPAuthSessionWrapper
 from twisted.web.guard import BasicCredentialFactory
 from twisted.cred import portal, checkers, credentials, error as credError
 from twisted.web.resource import IResource
+from twisted.web.resource import NoResource
 from twisted.web import server, resource
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor, ssl
@@ -40,8 +41,17 @@ class PasswordChecker(object):
         self.check_function = check_function
 
     def requestAvatarId(self, credentials):
-        if self.check_function(credentials.username, credentials.password):
-            return defer.succeed(credentials.username)
+        username = credentials.username
+        password = credentials.password
+
+        if type(username) == bytes:
+            username = username.decode('utf-8')
+
+        if type(password) == bytes:
+            password = password.decode('utf-8')
+
+        if self.check_function(username, password):
+            return defer.succeed(username)
         else:
             return defer.fail(credError.UnauthorizedLogin("Login failed"))
 
@@ -87,6 +97,17 @@ class JsonRpcProtocolFactory(Factory):
     def __init__(self, rpcprocessor, tls_client_auth_enabled):
         self.rpcprocessor = rpcprocessor
         self.tls_client_auth_enabled = tls_client_auth_enabled
+
+class RootResource(resource.Resource):
+    def __init__(self, rpc):
+        resource.Resource.__init__(self)
+        self.rpc = rpc
+
+    def getChild(self, name, request):
+        if name == b'rpc':
+            return self.rpc
+        else:
+            return NoResource()
 
 class JsonRpcHttpResource(resource.Resource):
     isLeaf = True
@@ -194,26 +215,24 @@ class TwistedJsonRpcServer(object):
         f = None
 
         if self.http_enabled:
-            root = resource.Resource()
-
             rpc = JsonRpcHttpResource()
             rpc.rpcprocessor = self.rpcprocessor
             rpc.tls_client_auth_enabled = self.tls_client_auth_enabled
-
-            # stupid workaround for Python 3
-            # otherwise the resource cannot be found
-            if sys.version_info.major >= 3:
-                root = rpc
 
             if self.http_basic_auth_enabled:
                 checker = PasswordChecker(self.passwdCheckFunction)
                 realm = HttpPasswordRealm(rpc)
                 p = portal.Portal(realm, [checker])
 
-                credentialFactory = BasicCredentialFactory(b'Reflect RPC')
+                realm_name = 'Reflect RPC'
+
+                if sys.version_info.major == 2:
+                    realm_name = realm_name.encode('utf-8')
+
+                credentialFactory = BasicCredentialFactory(realm_name)
                 rpc = HTTPAuthSessionWrapper(p, [credentialFactory])
 
-            root.putChild('rpc', rpc)
+            root = RootResource(rpc)
 
             f = server.Site(root)
         else:

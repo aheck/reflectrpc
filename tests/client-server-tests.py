@@ -263,10 +263,6 @@ class ClientServerTests(unittest.TestCase):
             server.stop()
 
     def test_twisted_server_http_basic_auth_no_password(self):
-        if sys.version_info.major >= 3:
-            print("Test doesn't run with Python 3 because of Twisted incompatibilities")
-            return
-
         server = ServerRunner('../examples/serverhttp_basic_auth.py', 5500)
         server.run()
 
@@ -283,11 +279,6 @@ class ClientServerTests(unittest.TestCase):
             server.stop()
 
     def test_twisted_server_http_basic_auth_wrong_username(self):
-        # Test doesn't run with Python 3 because of Twisted incompatibilities
-        if sys.version_info.major >= 3:
-            print("Test doesn't run with Python 3 because of Twisted incompatibilities")
-            return
-
         server = ServerRunner('../examples/serverhttp_basic_auth.py', 5500)
         server.run()
 
@@ -305,10 +296,6 @@ class ClientServerTests(unittest.TestCase):
             server.stop()
 
     def test_twisted_server_http_basic_auth_wrong_password(self):
-        if sys.version_info.major >= 3:
-            print("Test doesn't run with Python 3 because of Twisted incompatibilities")
-            return
-
         server = ServerRunner('../examples/serverhttp_basic_auth.py', 5500)
         server.run()
 
