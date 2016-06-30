@@ -266,12 +266,17 @@ class RpcClient(object):
         data = self.sock.recv(4096)
 
         while not b"\r\n" in data:
-            if len(data >= 4096):
+            if len(data) >= 4096:
                 raise Exception("Couldn't find a complete HTTP header within the first 4096 bytes of the server response!")
 
             data += self.sock.recv(4096)
 
-        header, data = data.split(b"\r\n\r\n", 1)
+        header = None
+
+        try:
+            header, data = data.split(b"\r\n\r\n", 1)
+        except ValueError as e:
+            raise HttpException("Received invalid HTTP response: Couldn't find a HTTP header")
 
         header = header.decode('utf-8')
         headerlines = header.splitlines()
