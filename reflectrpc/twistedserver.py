@@ -144,8 +144,10 @@ class TwistedJsonRpcServer(object):
 
         Args:
             rpcprocessor (RpcProcessor): RPC implementation
-            host (str): Hostname or IP to listen on
-            port (int): TCP port to listen on
+            host (str): Hostname, IP or UNIX domain socket to listen on. A UNIX
+                        Domain Socket might look like this: unix:///tmp/my.sock
+            port (int): TCP port to listen on (if host is a UNIX Domain Socket
+                        this value is ignored)
         """
         self.host = host
         self.port = port
@@ -158,6 +160,10 @@ class TwistedJsonRpcServer(object):
         self.http_enabled = False
         self.http_basic_auth_enabled = False
         self.passwdCheckFunction = None
+
+        self.unix_socket_backlog = 50
+        self.unix_socket_mode = 438
+        self.unix_socket_want_pid = False
 
     def enable_tls(self, pem_file):
         """
@@ -208,11 +214,39 @@ class TwistedJsonRpcServer(object):
         self.http_basic_auth_enabled = True
         self.passwdCheckFunction = passwdCheckFunction
 
+    def set_unix_socket_backlog(self, backlog):
+        """
+        Sets the number of client connections accepted in case we listen on a
+        UNIX Domain Socket
+
+        Args:
+            backlog (int): Number of client connections allowed
+        """
+        self.unix_socket_backlog = backlog
+
+    def set_unix_socket_mode(self, mode):
+        """
+        Sets the file permission mode used in case we listen on a UNIX Domain
+        Socket
+
+        Args:
+            mode (int): UNIX file permission mode to protect the Domain Socket
+        """
+        self.unix_socket_mode = mode
+
+    def enable_unix_socket_want_pid(self):
+        """
+        Enable the creation of a PID file in case you listen on a UNIX Domain
+        Socket
+        """
+        self.unix_socket_want_pid = True
+
     def run(self):
         """
         Start the server and listen on host:port
         """
         f = None
+        unix_prefix = 'unix://'
 
         if self.http_enabled:
             rpc = JsonRpcHttpResource()
@@ -248,8 +282,16 @@ class TwistedJsonRpcServer(object):
                         self.cert.options(self.client_auth_ca),
                         interface=self.host)
         else:
-            reactor.listenTCP(self.port, f, interface=self.host)
+            if self.host.startswith(unix_prefix):
+                path = self.host[len(unix_prefix):]
+                reactor.listenUNIX(path, f, backlog=self.unix_socket_backlog,
+                        mode=self.unix_socket_mode, wantPID=self.unix_socket_want_pid)
+            else:
+                reactor.listenTCP(self.port, f, interface=self.host)
 
-        print("Listening on %s:%d" % (self.host, self.port))
+        if self.host.startswith(unix_prefix):
+            print("Listening on %s" % (self.host))
+        else:
+            print("Listening on %s:%d" % (self.host, self.port))
 
         reactor.run()

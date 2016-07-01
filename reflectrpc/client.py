@@ -60,8 +60,9 @@ class RpcClient(object):
         Constructor
 
         Args:
-            host (str): Hostname or IP address to connect to
-            port (int): TCP port to connect to
+            host (str): Hostname, IP address or UNIX Domain Socket to connect to
+            port (int): TCP port to connect to (ignored if host is a UNIX Domain
+                        Socket)
         """
         self.req_id = 1
         self.recv_buf = ''
@@ -415,11 +416,19 @@ class RpcClient(object):
             TLSHostnameError: If server hostname validation failed
         """
         self.sock = None
+        unix_prefix = 'unix://'
+        socket_type = socket.AF_INET
+        if self.host.startswith(unix_prefix):
+            socket_type = socket.AF_UNIX
 
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock = socket.socket(socket_type, socket.SOCK_STREAM)
         sock.settimeout(self.timeout)
 
-        sock.connect((self.host, self.port))
+        if self.host.startswith(unix_prefix):
+            path = self.host[len(unix_prefix):]
+            sock.connect(path)
+        else:
+            sock.connect((self.host, self.port))
 
         if self.tls_enabled:
             if self.ca_file:

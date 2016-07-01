@@ -28,6 +28,28 @@ class PortReadyTimeout(Exception):
     def __str__(self):
         return "PortReadyTimeout: Port %d is not ready for TCP connections" % (self.port)
 
+def wait_for_unix_socket_gone(socket_path, timeout):
+    start_time = time.time()
+    sock = None
+    while (time.time() - start_time < timeout):
+        if not os.path.exists(socket_path):
+            return
+
+        time.sleep(0.5)
+
+    raise PortFreeTimeout(socket_path)
+
+def wait_for_unix_socket_in_use(socket_path, timeout):
+    start_time = time.time()
+    sock = None
+    while (time.time() - start_time < timeout):
+        if os.path.exists(socket_path):
+            return
+
+        time.sleep(0.5)
+
+    raise PortReadyTimeout(socket_path)
+
 def wait_for_free_port(host, port, timeout):
     """
     Waits for a TCP port to become free
@@ -150,13 +172,16 @@ class ServerRunner(object):
         self.directory = os.path.dirname(path)
         self.server_program = os.path.basename(path)
         self.host = 'localhost'
-        self.port = 5500
+        self.port = port
         self.pid = None
         self.timeout = 5
 
     def run(self):
-        # we don't fork before we know that the TCP port is free
-        wait_for_free_port(self.host, self.port, self.timeout)
+        # we don't fork before we know that the TCP port/UNIX socket is free
+        if isinstance(self.port, int):
+            wait_for_free_port(self.host, self.port, self.timeout)
+        else:
+            wait_for_unix_socket_gone(self.port, self.timeout)
 
         pid = os.fork()
 
@@ -172,9 +197,17 @@ class ServerRunner(object):
         else:
             # parent
             self.pid = pid
-            wait_for_tcp_port_in_use(self.host, self.port, self.timeout)
+
+            if isinstance(self.port, int):
+                wait_for_tcp_port_in_use(self.host, self.port, self.timeout)
+            else:
+                wait_for_unix_socket_in_use(self.port, self.timeout)
 
     def stop(self):
         os.kill(self.pid, signal.SIGINT)
         os.waitpid(self.pid, 0)
-        wait_for_free_port(self.host, self.port, self.timeout)
+
+        if isinstance(self.port, int):
+            wait_for_free_port(self.host, self.port, self.timeout)
+        else:
+            wait_for_unix_socket_gone(self.port, self.timeout)

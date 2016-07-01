@@ -312,6 +312,21 @@ class ClientServerTests(unittest.TestCase):
             client.close_connection()
             server.stop()
 
+    def test_unix_socket(self):
+        server = ServerRunner('../examples/serverunixsocket.py',
+                '/tmp/reflectrpc.sock')
+        server.run()
+
+        client = RpcClient('unix:///tmp/reflectrpc.sock', 0)
+
+        try:
+            result = client.rpc_call('echo', 'Hello Server')
+            client.close_connection()
+
+            self.assertEqual(result, 'Hello Server')
+        finally:
+            client.close_connection()
+            server.stop()
 
 
 if __name__ == '__main__':
