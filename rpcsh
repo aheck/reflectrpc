@@ -10,7 +10,7 @@ from reflectrpc.rpcsh import ReflectRpcShell
 parser = argparse.ArgumentParser(description="JSON-RPC shell")
 
 parser.add_argument("host", metavar='HOST', type=str, help="Host to connect to")
-parser.add_argument("port", metavar='PORT', type=int, help="Port to connect to")
+parser.add_argument("port", metavar='PORT', type=int, help="Port to connect to (omit if HOST is a UNIX domain socket)")
 
 parser.add_argument('--http', default=False, action='store_true',
         help='Use HTTP as transport protocol')
@@ -27,6 +27,16 @@ parser.add_argument('-k', '--key', default='',
         help='Key for client authentication')
 parser.add_argument('-c', '--cert', default='',
         help='Certificate for client authentication')
+
+# make the PORT argument optional if HOST is a UNIX domain socket
+pos = -1
+for i, elem in enumerate(sys.argv):
+    if elem.startswith('unix://'):
+        pos = i
+        break
+
+if pos > -1:
+    sys.argv.insert(pos + 1, '0')
 
 args = parser.parse_args()
 

@@ -135,7 +135,10 @@ class ReflectRpcShell(Cmd):
             self.connection_failed_error(True)
 
         self.prompt = '(rpc) '
-        self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (self.host, self.port)
+        if self.host.startswith('unix://'):
+            self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s" % (self.host)
+        else:
+            self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (self.host, self.port)
 
         if self.service_description:
             self.intro += "\n\nSelf-description of Service:\n============================\n"
@@ -181,7 +184,11 @@ class ReflectRpcShell(Cmd):
             pass
 
     def connection_failed_error(self, exit=False):
-        print("Failed to connect to %s on TCP port %d" % (self.client.host, self.client.port))
+        if self.host.startswith('unix://'):
+            print("Failed to connect to %s" % (self.client.host))
+        else:
+            print("Failed to connect to %s on TCP port %d" % (self.client.host, self.client.port))
+
         if exit:
             sys.exit(1)
 
