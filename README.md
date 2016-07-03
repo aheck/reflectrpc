@@ -109,10 +109,10 @@ install it with a single command:
     caller while all other exceptions are suppressed as internal errors
 - Custom types enum and named hashes (like structs in C)
 - Protocol implementation is easily reusable in custom servers
-- Twisted-based server that supports line-based plain sockets, HTTP, HTTP
-    Basic Auth, TLS, and TLS client auth
-- Client that supports line-based plain sockets, HTTP, HTTP Basic Auth, TLS,
-    and TLS client auth
+- Twisted-based server that supports TCP and UNIX Domain Sockets, line-based
+    plain sockets, HTTP, HTTP Basic Auth, TLS, and TLS client auth
+- Client that supports TCP and UNIX Domain Sockets, line-based plain sockets,
+    HTTP, HTTP Basic Auth, TLS, and TLS client auth
 - Create HTML documentation from a running RPC service by using the program *rpcdoc*
 
 ## Datatypes ##
