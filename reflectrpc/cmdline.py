@@ -4,7 +4,10 @@ from builtins import bytes, dict, list, int, float, str
 import argparse
 import sys
 
+import reflectrpc
+import reflectrpc.client
 from reflectrpc.client import RpcClient
+from reflectrpc.client import RpcError
 
 def build_cmdline_parser(description):
     """
@@ -72,3 +75,32 @@ def connect_client(args):
         args.client.enable_client_auth(args.cert, args.key)
 
     return client
+
+def fetch_service_metainfo(client):
+    """
+    Fetch all metainformation from a service
+    """
+    service_description = ''
+    functions = []
+    custom_types = []
+
+    try:
+        try:
+            service_description = client.rpc_call('__describe_service')
+        except RpcError:
+            print("Call to '__describe_service' failed", file=sys.stderr)
+
+        try:
+            functions = client.rpc_call('__describe_functions')
+        except RpcError:
+            print("Call to '__describe_functions' failed", file=sys.stderr)
+
+        try:
+            custom_types = client.rpc_call('__describe_custom_types')
+        except RpcError:
+            print("Call to '__describe_custom_types' failed", file=sys.stderr)
+    except reflectrpc.client.NetworkError as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
+
+    return service_description, functions, custom_types

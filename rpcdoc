@@ -8,7 +8,6 @@ import argparse
 
 import reflectrpc
 import reflectrpc.cmdline
-from reflectrpc.client import RpcError
 
 def format_type(typename):
     if not len(typename):
@@ -27,29 +26,7 @@ parser.add_argument("outfile", metavar='OUTFILE', type=str, help="Output file")
 args = parser.parse_args()
 client = reflectrpc.cmdline.connect_client(args)
 
-service_description = ''
-functions = []
-custom_types = []
-
-try:
-    try:
-        service_description = client.rpc_call('__describe_service')
-    except RpcError:
-        pass
-
-    try:
-        functions = client.rpc_call('__describe_functions')
-    except RpcError:
-        pass
-
-    try:
-        custom_types = client.rpc_call('__describe_custom_types')
-    except RpcError:
-        pass
-except reflectrpc.client.NetworkError as e:
-    print(e, file=sys.stderr)
-    print('', file=sys.stderr)
-    sys.exit(1)
+(service_description, functions, custom_types) = reflectrpc.cmdline.fetch_service_metainfo(client)
 
 f = open(args.outfile, "w")
 
