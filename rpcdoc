@@ -7,7 +7,8 @@ import sys
 import argparse
 
 import reflectrpc
-from reflectrpc.client import RpcClient
+import reflectrpc.cmdline
+from reflectrpc.client import RpcError
 
 def format_type(typename):
     if not len(typename):
@@ -18,50 +19,13 @@ def format_type(typename):
 
     return typename
 
-parser = argparse.ArgumentParser(description="Generate documentation from a running ReflectRPC service")
+parser = reflectrpc.cmdline.build_cmdline_parser("Generate documentation from a running ReflectRPC service")
 
-parser.add_argument("host", metavar='HOST', type=str, help="Host to connect to")
-parser.add_argument("port", metavar='PORT', type=int, help="Port to connect to (omit if HOST is a UNIX domain socket)")
+# Add our program-specific arguments
 parser.add_argument("outfile", metavar='OUTFILE', type=str, help="Output file")
 
-parser.add_argument('--http', default=False, action='store_true',
-        help='Use HTTP as transport protocol')
-parser.add_argument('--http-path', default='',
-        help='HTTP path to send RPC calls to (default is /rpc)')
-
-parser.add_argument('-t', '--tls', default=False, action='store_true',
-        help='Use TLS authentication and encryption on the RPC connection')
-parser.add_argument('--check-hostname', default=False, action='store_true',
-        help='Check server hostname against its TLS certificate')
-parser.add_argument('-C', '--ca', default='',
-        help='Certificate Authority to check the server certificate against')
-parser.add_argument('-k', '--key', default='',
-        help='Key for client authentication')
-parser.add_argument('-c', '--cert', default='',
-        help='Certificate for client authentication')
-
-# make the PORT argument optional if HOST is a UNIX domain socket
-pos = -1
-for i, elem in enumerate(sys.argv):
-    if elem.startswith('unix://'):
-        pos = i
-        break
-
-if pos > -1:
-    sys.argv.insert(pos + 1, '0')
-
 args = parser.parse_args()
-
-client = RpcClient(args.host, args.port)
-
-if args.http:
-    client.enable_http(args.http_path)
-
-if args.tls:
-    client.enable_tls(args.ca, args.check_hostname)
-
-if args.cert and args.key:
-    args.client.enable_client_auth(args.cert, args.key)
+client = reflectrpc.cmdline.connect_client(args)
 
 service_description = ''
 functions = []
@@ -85,7 +49,7 @@ try:
 except reflectrpc.client.NetworkError as e:
     print(e, file=sys.stderr)
     print('', file=sys.stderr)
-    self.connection_failed_error(True)
+    sys.exit(1)
 
 f = open(args.outfile, "w")
 
