@@ -7,7 +7,7 @@ import argparse
 
 from reflectrpc.rpcsh import ReflectRpcShell
 
-parser = argparse.ArgumentParser(description="JSON-RPC shell")
+parser = argparse.ArgumentParser(description="Interactive shell to access JSON-RPC services (part of the ReflectRPC project)")
 
 parser.add_argument("host", metavar='HOST', type=str, help="Host to connect to")
 parser.add_argument("port", metavar='PORT', type=int, help="Port to connect to (omit if HOST is a UNIX domain socket)")
