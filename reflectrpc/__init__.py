@@ -8,6 +8,15 @@ version = '0.7.3'
 
 json_types = ['int', 'bool', 'float', 'string', 'array', 'hash', 'base64']
 
+def json2py(json_type):
+    mapping = {'bool': 'bool', 'int': 'int', 'float': 'float', 'string':
+               'str', 'array': 'list', 'hash': 'dict', 'base64': 'str'}
+
+    if json_type not in mapping:
+        return None
+
+    return mapping[json_type]
+
 def isstring(value):
     return type(value).__name__ in ['str', 'unicode']
 
