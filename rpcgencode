@@ -44,6 +44,16 @@ if args.host.startswith('unix://'):
 else:
     f.write("        self.client = RpcClient('%s', %d)\n" % (args.host, args.port))
 
+# derive the options for RpcClient from the args with which the user called us
+if args.http:
+    f.write("        self.client.enable_http(%s)\n" % (args.http_path))
+
+if args.tls:
+    f.write("        self.client.enable_tls(%s, %s)\n" % (args.ca, args.check_hostname))
+
+if args.cert and args.key:
+    f.write("        self.client.enable_client_auth(%s, %s)\n" % (args.cert, args.key))
+
 f.write('\n')
 
 for i, func_desc in enumerate(functions):
