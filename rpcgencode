@@ -8,7 +8,7 @@ import sys
 import reflectrpc
 import reflectrpc.cmdline
 
-parser = reflectrpc.cmdline.build_cmdline_parser("Generate documentation from a running ReflectRPC service")
+parser = reflectrpc.cmdline.build_cmdline_parser("Generate client code from a running ReflectRPC service")
 
 # Add our program-specific arguments
 parser.add_argument("outfile", metavar='OUTFILE', type=str, help="Output file")
@@ -34,11 +34,19 @@ else:
 
 f.write('"""\n\n')
 
+f.write('from reflectrpc import RpcClient\n')
+f.write('from reflectrpc import RpcError\n\n')
+
 f.write('class ServiceClient(object):\n')
 f.write('    def __init__(self):\n')
-f.write('        pass\n\n')
+if args.host.startswith('unix://'):
+    f.write("        self.client = RpcClient('%s')\n" % (args.host))
+else:
+    f.write("        self.client = RpcClient('%s', %d)\n" % (args.host, args.port))
 
-for func_desc in functions:
+f.write('\n')
+
+for i, func_desc in enumerate(functions):
     paramlist = [param['name'] for param in func_desc['params']]
     methodparams = ['self', *paramlist]
     methodparamlist = ', '.join(methodparams)
@@ -56,13 +64,16 @@ for func_desc in functions:
             reflectrpc.json2py(param['type']), param['description']))
     f.write('\n')
     f.write('        Returns:\n')
-    f.write('            %s: %s\n' % (reflectrpc.json2py(func_desc['result_type']), func_desc['result_desc']))
+    f.write('            %s: %s\n\n' % (reflectrpc.json2py(func_desc['result_type']), func_desc['result_desc']))
+    f.write('        Raises:\n')
+    f.write('            RpcError: Error returned by the server\n')
     f.write('        """\n')
     if len(paramlist):
         f.write("        return self.client.rpc_call('%s', %s)" % (func_desc['name'], paramlist))
-        f.write('\n\n')
     else:
         f.write("        return self.client.rpc_call('%s')" % (func_desc['name']))
+
+    if i < len(functions) - 1:
         f.write('\n\n')
 
 f.close()
