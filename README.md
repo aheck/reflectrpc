@@ -389,6 +389,15 @@ Current versions of PyPy should also work.
 
 ReflectRPC is licensed under the MIT license
 
+## How to Contribute ##
+
+Pull requests are always welcome.
+
+If you create a pull request for this project you agree that your code will
+be released under the terms of the MIT license.
+
+Ideas for improvements can be found in the TODO file.
+
 ## Contact ##
 
 Andreas Heck <<aheck@gmx.de>>

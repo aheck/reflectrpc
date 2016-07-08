@@ -1,0 +1,3 @@
+- Create a useful example RPC service using Twisted for concurrency
+- Implement ReflectRPC in other programming languages (especially the core
+  components RpcFunction and RpcProcessor)
