@@ -2,3 +2,4 @@ future
 service_identity
 twisted
 pyOpenSSL
+pexpect

@@ -4,14 +4,18 @@ from __future__ import unicode_literals
 from builtins import bytes, dict, list, int, float, str
 
 import os
+import signal
 import sys
 import unittest
+
+import pexpect
 
 sys.path.append('..')
 
 from reflectrpc.rpcsh import print_functions
 from reflectrpc.rpcsh import split_exec_line
 from reflectrpc.rpcsh import ReflectRpcShell
+from reflectrpc.testing import ServerRunner
 
 class RpcShTests(unittest.TestCase):
     def test_split_exec_line(self):
@@ -65,6 +69,26 @@ class RpcShTests(unittest.TestCase):
         python = sys.executable
         exit_status = os.system("cd .. && %s rpcsh --help > /dev/null" % (python))
         self.assertEqual(exit_status, 0)
+
+    def test_rpcsh_expect(self):
+        server = ServerRunner('../examples/server.py', 5500)
+        server.run()
+
+        try:
+            child = pexpect.spawn ('../rpcsh localhost 5500')
+
+            child.expect('ReflectRPC Shell\r\n')
+            child.expect('================\r\n\r\n')
+            child.expect("Type 'help' for available commands\r\n\r\n")
+            child.expect('RPC server: localhost:5500\r\n\r\n')
+            child.expect('Self-description of Service:\r\n')
+            child.expect('============================\r\n')
+            child.expect('Example RPC Service \(1.0\)\r\n')
+            child.expect('This is an example service for ReflectRPC\r\n')
+            child.expect('\(rpc\) ')
+        finally:
+            child.kill(signal.SIGTERM)
+            server.stop()
 
 if __name__ == '__main__':
     unittest.main()
