@@ -86,6 +86,24 @@ class RpcShTests(unittest.TestCase):
             child.expect('Example RPC Service \(1.0\)\r\n')
             child.expect('This is an example service for ReflectRPC\r\n')
             child.expect('\(rpc\) ')
+
+            child.sendline('list')
+            child.expect('echo\(message\)\r\n')
+            child.expect('add\(a, b\)')
+            child.expect('sub\(a, b\)')
+            child.expect('mul\(a, b\)')
+            child.expect('div\(a, b\)')
+            child.expect('enum_echo\(phone_type\)')
+            child.expect('hash_echo\(address\)')
+            child.expect('notify\(value\)')
+            child.expect('is_authenticated\(\)')
+            child.expect('get_username\(\)')
+
+            child.sendline('exec echo "Hello Server"')
+            child.expect('Server replied: Hello Server')
+
+            child.sendline('exec add 5 6')
+            child.expect('Server replied: 11')
         finally:
             child.kill(signal.SIGTERM)
             server.stop()
