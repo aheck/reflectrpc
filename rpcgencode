@@ -58,7 +58,7 @@ f.write('\n')
 
 for i, func_desc in enumerate(functions):
     paramlist = [param['name'] for param in func_desc['params']]
-    methodparams = ['self', *paramlist]
+    methodparams = ['self'] + paramlist
     methodparamlist = ', '.join(methodparams)
     paramlist = ', '.join(paramlist)
 

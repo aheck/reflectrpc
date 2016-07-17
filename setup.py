@@ -10,7 +10,7 @@ setup(name = 'reflectrpc',
       url = 'https://github.com/aheck/reflectrpc',
       download_url = 'https://github.com/aheck/reflectrpc/archive/v0.7.3.tar.gz',
       keywords = ['json-rpc', 'json', 'rpc', 'webservice'],
-      scripts = ['rpcsh', 'rpcdoc'],
+      scripts = ['rpcsh', 'rpcdoc', 'rpcgencode'],
       install_requires = ['future', 'service_identity', 'twisted', 'pyOpenSSL'],
       classifiers = [
           'Development Status :: 4 - Beta',

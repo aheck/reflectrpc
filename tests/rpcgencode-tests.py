@@ -25,12 +25,14 @@ class RpcGenCodeTests(unittest.TestCase):
         server = ServerRunner('../examples/server.py', 5500)
         server.run()
 
+        python = sys.executable
+
         try:
             dirname = tempfile.mkdtemp()
             packagedir = os.path.join(dirname, 'example')
             os.mkdir(packagedir)
             filename = os.path.join(packagedir, '__init__.py')
-            status = os.system('../rpcgencode localhost 5500 %s' % (filename))
+            status = os.system('%s ../rpcgencode localhost 5500 %s' % (python, filename))
 
             if status != 0:
                 self.fail('rpcgencode returned with a non-zero status code')
@@ -38,7 +40,6 @@ class RpcGenCodeTests(unittest.TestCase):
             if not os.path.exists(filename):
                 self.fail("File '%s' was not created by rpcgencode" % (filename))
 
-            python = sys.executable
             status = os.system('%s -m py_compile %s' % (python, filename))
 
             if status != 0:
