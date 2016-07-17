@@ -14,6 +14,7 @@ Creating self-describing RPC services
 - [Returning Errors](#returning-errors)
 - [Serving RPCs](#serving-rpcs)
 - [Generating Documentation](#generating-documentation)
+- [Generating Client Code](#generating-client-code)
 - [Supported Python Versions](#supported-python-versions)
 - [License](#license)
 - [Contact](#contact)
@@ -114,6 +115,7 @@ install it with a single command:
 - Client that supports TCP and UNIX Domain Sockets, line-based plain sockets,
     HTTP, HTTP Basic Auth, TLS, and TLS client auth
 - Create HTML documentation from a running RPC service by using the program *rpcdoc*
+- Create documented client code from a running RPC service with the program *rpcgencode*
 
 ## Datatypes ##
 
@@ -373,6 +375,23 @@ output:
 It will output some formatted HTML documentation for your service:
 
 ![HTML Documentation](/pics/htmldocs.png)
+
+## Generating Client Code ##
+
+It is nice to have a generic JSON-RPC client like the one in
+*reflectrpc.client.RpcClient*. But it is even nicer to have a client library
+that is specifically made for your particular service. Such a client library
+should expose all the RPC calls of your service and have docstrings with the
+description of your functions and their parameters, as well as the typing
+information.
+
+Such a client can be generated with the following command:
+
+> rpcgencode localhost 5500 client.py
+
+And it will look something like this:
+
+![Generated Client](/pics/generated-client.png)
 
 ## Supported Python Versions ##
 
