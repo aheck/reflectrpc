@@ -15,10 +15,6 @@ import unittest
 
 sys.path.append('..')
 
-from reflectrpc.client import RpcClient
-from reflectrpc.client import RpcError
-from reflectrpc.client import NetworkError
-from reflectrpc.client import HttpException
 from reflectrpc.testing import ServerRunner
 
 class RpcGenCodeTests(unittest.TestCase):
@@ -47,7 +43,6 @@ class RpcGenCodeTests(unittest.TestCase):
             if status != 0:
                 self.fail("Syntax error in file '%s'" % (filename))
 
-            cwd = os.getcwd()
             os.chdir(dirname)
 
             cmd = "%s -c 'import sys; sys.path.append(\"%s/..\"); import example; c = example.ServiceClient(); print(c.echo(\"Hello Server\"))'" % (python, cwd)
