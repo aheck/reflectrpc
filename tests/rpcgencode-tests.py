@@ -9,6 +9,7 @@ import json
 import os
 import os.path
 import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -26,6 +27,7 @@ class RpcGenCodeTests(unittest.TestCase):
         server.run()
 
         python = sys.executable
+        cwd = os.getcwd()
 
         try:
             dirname = tempfile.mkdtemp()
@@ -44,9 +46,19 @@ class RpcGenCodeTests(unittest.TestCase):
 
             if status != 0:
                 self.fail("Syntax error in file '%s'" % (filename))
+
+            cwd = os.getcwd()
+            os.chdir(dirname)
+
+            cmd = "%s -c 'import sys; sys.path.append(\"%s/..\"); import example; c = example.ServiceClient(); print(c.echo(\"Hello Server\"))'" % (python, cwd)
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+            (out, status) = proc.communicate()
+
+            self.assertEqual('Hello Server\n', out.decode('utf-8'))
         finally:
             server.stop()
             shutil.rmtree(dirname)
+            os.chdir(cwd)
 
 
 if __name__ == '__main__':

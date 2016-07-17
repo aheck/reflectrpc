@@ -34,8 +34,8 @@ else:
 
 f.write('"""\n\n')
 
-f.write('from reflectrpc import RpcClient\n')
-f.write('from reflectrpc import RpcError\n\n')
+f.write('from reflectrpc.client import RpcClient\n')
+f.write('from reflectrpc.client import RpcError\n\n')
 
 f.write('class ServiceClient(object):\n')
 f.write('    def __init__(self):\n')
