@@ -17,6 +17,7 @@ Creating self-describing RPC services
 - [Generating Client Code](#generating-client-code)
 - [Supported Python Versions](#supported-python-versions)
 - [License](#license)
+- [How to Contribute](#how-to-contribute)
 - [Contact](#contact)
 
 ## What is ReflectRPC? ##
