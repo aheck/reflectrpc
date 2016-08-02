@@ -854,14 +854,8 @@ class RpcProcessor(object):
                     return None
 
                 reply['result'] = self.call_function(func_desc, rpcinfo, *request['params'])
-            except JsonRpcError as e:
-                reply['error'] = e.to_dict()
-                reply['result'] = None
             except Exception as e:
-                traceback.print_exc()
-                error = JsonRpcInternalError("Internal error")
-                reply['error'] = error.to_dict()
-                reply['result'] = None
+                reply = self.handle_error(e, reply)
 
             return reply
         except Exception as e:
@@ -869,6 +863,20 @@ class RpcProcessor(object):
             error = JsonRpcInternalError("Method execution failed: %s" % (request['method']))
             reply['error'] = error.to_dict()
             return reply
+
+    def handle_error(self, e, reply):
+        try:
+            raise e
+        except JsonRpcError as e:
+            reply['error'] = e.to_dict()
+            reply['result'] = None
+        except Exception as e:
+            traceback.print_exc()
+            error = JsonRpcInternalError("Internal error")
+            reply['error'] = error.to_dict()
+            reply['result'] = None
+
+        return reply
 
     def __is_named_hash_type(self, typename):
         """

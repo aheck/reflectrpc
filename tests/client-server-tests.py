@@ -412,6 +412,47 @@ class ClientServerTests(unittest.TestCase):
             client2.close_connection()
             server.stop()
 
+    def test_concurrency_error_handling(self):
+        server = ServerRunner('../examples/concurrency.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+
+        try:
+            with self.assertRaises(RpcError) as cm:
+                client.rpc_call('deferred_error')
+            self.assertEqual(cm.exception.json['name'], "JsonRpcError")
+            self.assertEqual(cm.exception.json['message'], "You wanted an error, here you have it!")
+
+            with self.assertRaises(RpcError) as cm:
+                result = client.rpc_call('deferred_internal_error')
+            self.assertEqual(cm.exception.json['name'], "InternalError")
+            self.assertEqual(cm.exception.json['message'], "Internal error")
+        finally:
+            client.close_connection()
+            server.stop()
+
+    def test_concurrency_error_handling_http(self):
+        server = ServerRunner('../examples/concurrency-http.py', 5500)
+        server.run()
+
+        client = RpcClient('localhost', 5500)
+        client.enable_http()
+
+        try:
+            with self.assertRaises(RpcError) as cm:
+                client.rpc_call('deferred_error')
+            self.assertEqual(cm.exception.json['name'], "JsonRpcError")
+            self.assertEqual(cm.exception.json['message'], "You wanted an error, here you have it!")
+
+            with self.assertRaises(RpcError) as cm:
+                result = client.rpc_call('deferred_internal_error')
+            self.assertEqual(cm.exception.json['name'], "InternalError")
+            self.assertEqual(cm.exception.json['message'], "Internal error")
+        finally:
+            client.close_connection()
+            server.stop()
+
 
 if __name__ == '__main__':
     unittest.main()

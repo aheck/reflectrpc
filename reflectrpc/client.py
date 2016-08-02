@@ -45,11 +45,12 @@ class RpcError(Exception):
     """
     JSON-RPC error object as received by the client
     """
-    def __init__(self, msg):
-        self.msg = msg
+    def __init__(self, json):
+        self.msg = str(json)
+        self.json = json
 
     def __str__(self):
-        return "ERROR: " + str(self.msg)
+        return "ERROR: " + self.msg
 
 class RpcClient(object):
     """

@@ -90,8 +90,13 @@ class JsonRpcProtocol(LineReceiver):
                 reply['result'] = value
                 self.sendLine(json.dumps(reply).encode('utf-8'))
 
+            def error_handler(error):
+                r = rpcprocessor.handle_error(error.value, reply)
+                self.sendLine(json.dumps(r).encode('utf-8'))
+
             d = reply['result']
             d.addCallback(handler)
+            d.addErrback(error_handler)
         else:
             self.sendLine(json.dumps(reply).encode('utf-8'))
 
@@ -140,7 +145,7 @@ class JsonRpcHttpResource(resource.Resource):
         request.setHeader(b"Content-Type", b"application/json-rpc")
 
         if isinstance(reply['result'], Deferred):
-            def _delayed_render(value):
+            def delayed_render(value):
                 reply['result'] = value
 
                 data = json.dumps(reply).encode('utf-8')
@@ -149,8 +154,18 @@ class JsonRpcHttpResource(resource.Resource):
                 request.write(data)
                 request.finish()
 
+            def error_handler(error):
+                r = self.rpcprocessor.handle_error(error.value, reply)
+
+                data = json.dumps(r).encode('utf-8')
+                header_value = str(len(data)).encode('utf-8')
+                request.setHeader(b"Content-Length", header_value)
+                request.write(data)
+                request.finish()
+
             d = reply['result']
-            d.addCallback(_delayed_render)
+            d.addCallback(delayed_render)
+            d.addErrback(error_handler)
 
             return NOT_DONE_YET
 
