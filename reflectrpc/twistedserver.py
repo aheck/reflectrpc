@@ -16,15 +16,11 @@ from twisted.web import server, resource
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor, ssl
 from twisted.python import log
+from twisted.internet.defer import Deferred
+from twisted.protocols.basic import LineReceiver
+from twisted.web.server import NOT_DONE_YET
 
 import reflectrpc.server
-
-class JsonRpcServer(reflectrpc.server.AbstractJsonRpcServer):
-    """
-    Twisted implementation of AbstractJsonRpcServer
-    """
-    def send_data(self, data):
-        self.conn.write(data)
 
 class PasswordChecker(object):
     credentialInterfaces = (credentials.IUsernamePassword,)
@@ -66,27 +62,38 @@ class HttpPasswordRealm(object):
             return (IResource, self.resource, lambda: None)
         raise NotImplementedError()
 
-class JsonRpcProtocol(Protocol):
+class JsonRpcProtocol(LineReceiver):
     """
     Twisted protocol adapter
     """
     def __init__(self):
-        self.buf = ''
+        self.rpcinfo = None
+        self.initialized = False
 
-    def dataReceived(self, data):
-        if not hasattr(self, 'server'):
-            rpcinfo = None
+            #self.server = JsonRpcServer(self.factory.rpcprocessor,
+            #        self.transport, rpcinfo)
 
+    def lineReceived(self, line):
+        if not self.initialized:
+            self.initialized = True
             if self.factory.tls_client_auth_enabled:
                 self.username = self.transport.getPeerCertificate().get_subject().commonName
-                rpcinfo = {}
-                rpcinfo['authenticated'] = True
-                rpcinfo['username'] = self.username
+                self.rpcinfo = {}
+                self.rpcinfo['authenticated'] = True
+                self.rpcinfo['username'] = self.username
 
-            self.server = JsonRpcServer(self.factory.rpcprocessor,
-                    self.transport, rpcinfo)
+        rpcprocessor = self.factory.rpcprocessor
+        reply = rpcprocessor.process_request(line.decode('utf-8'), self.rpcinfo)
 
-        self.server.data_received(data)
+        if isinstance(reply['result'], Deferred):
+            def handler(value):
+                reply['result'] = value
+                self.sendLine(json.dumps(reply).encode('utf-8'))
+
+            d = reply['result']
+            d.addCallback(handler)
+        else:
+            self.sendLine(json.dumps(reply).encode('utf-8'))
 
 class JsonRpcProtocolFactory(Factory):
     """
@@ -129,10 +136,26 @@ class JsonRpcHttpResource(resource.Resource):
             rpcinfo['username'] = request.getUser().decode('utf-8')
 
         data = request.content.getvalue().decode('utf-8')
-        reply = json.dumps(self.rpcprocessor.process_request(data, rpcinfo))
+        reply = self.rpcprocessor.process_request(data, rpcinfo)
         request.setHeader(b"Content-Type", b"application/json-rpc")
 
-        return reply.encode('utf-8')
+        if isinstance(reply['result'], Deferred):
+            def _delayed_render(value):
+                reply['result'] = value
+
+                data = json.dumps(reply).encode('utf-8')
+                request.setHeader(b"Content-Length", b'%d' % (len(data)))
+                request.write(data)
+                request.finish()
+
+            d = reply['result']
+            d.addCallback(_delayed_render)
+
+            return NOT_DONE_YET
+
+        data = json.dumps(reply).encode('utf-8')
+        request.setHeader(b"Content-Length", b'%d' % (len(data)))
+        return data
 
 class TwistedJsonRpcServer(object):
     """

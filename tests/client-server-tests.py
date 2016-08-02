@@ -7,6 +7,8 @@ import errno
 import sys
 import json
 import os
+import threading
+import time
 import unittest
 
 sys.path.append('..')
@@ -326,6 +328,88 @@ class ClientServerTests(unittest.TestCase):
             self.assertEqual(result, 'Hello Server')
         finally:
             client.close_connection()
+            server.stop()
+
+    def test_concurrency(self):
+        server = ServerRunner('../examples/concurrency.py', 5500)
+        server.run()
+
+        client1 = RpcClient('localhost', 5500)
+        client2 = RpcClient('localhost', 5500)
+
+        results = []
+
+        def t1_func():
+            result = client1.rpc_call('slow_operation')
+            results.append(result)
+
+        def t2_func():
+            time.sleep(0.5)
+            result = client2.rpc_call('fast_operation')
+            results.append(result)
+
+        try:
+            t1 = threading.Thread(target = t1_func, args = ())
+            t1.start()
+
+            t2 = threading.Thread(target = t2_func, args = ())
+            t2.start()
+
+            t1.join()
+            if t1.is_alive():
+                raise RuntimeError("Failed to join on thread 1")
+            t2.join()
+            if t2.is_alive():
+                raise RuntimeError("Failed to join on thread 2")
+
+            # slow_operation (value 42) must finish last
+            self.assertEqual(results[0], 41)
+            self.assertEqual(results[1], 42)
+        finally:
+            client1.close_connection()
+            client2.close_connection()
+            server.stop()
+
+    def test_concurrency_http(self):
+        server = ServerRunner('../examples/concurrency-http.py', 5500)
+        server.run()
+
+        client1 = RpcClient('localhost', 5500)
+        client1.enable_http()
+        client2 = RpcClient('localhost', 5500)
+        client2.enable_http()
+
+        results = []
+
+        def t1_func():
+            result = client1.rpc_call('slow_operation')
+            results.append(result)
+
+        def t2_func():
+            time.sleep(0.5)
+            result = client2.rpc_call('fast_operation')
+            results.append(result)
+
+        try:
+            t1 = threading.Thread(target = t1_func, args = ())
+            t1.start()
+
+            t2 = threading.Thread(target = t2_func, args = ())
+            t2.start()
+
+            t1.join()
+            if t1.is_alive():
+                raise RuntimeError("Failed to join on thread 1")
+            t2.join()
+            if t2.is_alive():
+                raise RuntimeError("Failed to join on thread 2")
+
+            # slow_operation (value 42) must finish last
+            self.assertEqual(results[0], 41)
+            self.assertEqual(results[1], 42)
+        finally:
+            client1.close_connection()
+            client2.close_connection()
             server.stop()
 
 
