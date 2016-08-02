@@ -144,7 +144,8 @@ class JsonRpcHttpResource(resource.Resource):
                 reply['result'] = value
 
                 data = json.dumps(reply).encode('utf-8')
-                request.setHeader(b"Content-Length", b'%d' % (len(data)))
+                header_value = str(len(data)).encode('utf-8')
+                request.setHeader(b"Content-Length", header_value)
                 request.write(data)
                 request.finish()
 
@@ -154,7 +155,8 @@ class JsonRpcHttpResource(resource.Resource):
             return NOT_DONE_YET
 
         data = json.dumps(reply).encode('utf-8')
-        request.setHeader(b"Content-Length", b'%d' % (len(data)))
+        header_value = str(len(data)).encode('utf-8')
+        request.setHeader(b"Content-Length", header_value)
         return data
 
 class TwistedJsonRpcServer(object):
