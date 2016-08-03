@@ -865,6 +865,16 @@ class RpcProcessor(object):
             return reply
 
     def handle_error(self, e, reply):
+        """
+        Rewrite a reply dict for an exception caught during RPC function execution
+
+        Args:
+            e (Exception): The exception caught when executing an RPC function
+            reply (dict): The reply we wanted to send to the client before the error occured
+
+        Returns:
+            dict: The modified reply dict now containing information about the error
+        """
         try:
             raise e
         except JsonRpcError as e:
