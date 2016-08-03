@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/aheck/reflectrpc.svg?branch=master)](https://travis-ci.org/aheck/reflectrpc) [![Documentation Status](https://readthedocs.org/projects/reflectrpc/badge/?version=latest)](http://reflectrpc.readthedocs.io/en/latest/?badge=latest) [![PyPI](https://img.shields.io/pypi/v/reflectrpc.svg)](https://pypi.python.org/pypi/reflectrpc)
 
-Creating self-describing RPC services
+Self-describing JSON-RPC services made easy
 
 ## Contents
 
