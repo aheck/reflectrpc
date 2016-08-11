@@ -2,6 +2,12 @@
 Changelog
 *********
 
+0.7.4 (2016-08-11)
+==================
+
+- RPC functions run by the Twisted server can now return Deferreds to implement concurrent RPC services
+- Linux sys info example service
+
 0.7.3 (2016-07-24)
 ==================
 
