@@ -98,7 +98,10 @@ def split_exec_line(line):
 
 class ReflectRpcShell(Cmd):
     def __init__(self, host, port):
-        super().__init__()
+        if issubclass(Cmd, object):
+            super().__init__()
+        else:
+            Cmd.__init__(self)
 
         self.host = host
         self.port = port

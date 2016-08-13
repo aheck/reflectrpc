@@ -75,7 +75,8 @@ class RpcShTests(unittest.TestCase):
         server.run()
 
         try:
-            child = pexpect.spawn ('../rpcsh localhost 5500')
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500' % (python))
 
             child.expect('ReflectRPC Shell\r\n')
             child.expect('================\r\n\r\n')
