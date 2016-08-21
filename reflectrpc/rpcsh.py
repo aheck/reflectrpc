@@ -200,6 +200,7 @@ class ReflectRpcShell(Cmd):
             print("list   - List all RPC functions advertised by the server")
             print("doc    - Show the documentation of a RPC function")
             print("type   - Show the documentation of a custom RPC type")
+            print("types  - List all custom RPC types advertised by the server")
             print("exec   - Execute an RPC call")
             print("notify - Execute an RPC call but tell the server to send no response")
             print("raw    - Directly send a raw JSON-RPC message to the server")
@@ -218,6 +219,8 @@ class ReflectRpcShell(Cmd):
             print("Shos the documentation of a custom RPC type")
             print("Example:")
             print("    type PhoneType")
+        elif line == 'types':
+            print("List all custom RPC types advertised by the server")
         elif line == 'exec':
             print("Execute an RPC call")
             print("Examples:")
@@ -249,6 +252,10 @@ class ReflectRpcShell(Cmd):
             print("Unknown custom RPC type:", line)
 
         print_types(t)
+
+    def do_types(self, line):
+        for t in self.custom_types:
+            print(t['name'])
 
     def do_exec(self, line):
         tokens = split_exec_line(line)

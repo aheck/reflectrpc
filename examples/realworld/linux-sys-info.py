@@ -199,6 +199,7 @@ jsonrpc.set_description("Linux System Information Service",
 # register types
 jsonrpc.add_custom_type(memInfo)
 jsonrpc.add_custom_type(cpuInfo)
+jsonrpc.add_custom_type(cpu)
 
 # register RPC functions
 cpuinfo_func = reflectrpc.RpcFunction(get_cpuinfo, 'get_cpuinfo', 'Gets information about the system CPUs',
