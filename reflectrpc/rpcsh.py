@@ -144,7 +144,7 @@ class ReflectRpcShell(Cmd):
             self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (self.host, self.port)
 
         if self.service_description:
-            self.intro += "\n\nSelf-description of Service:\n============================\n"
+            self.intro += "\n\nSelf-description of the Service:\n================================\n"
             if self.service_description['name']:
                 self.intro += self.service_description['name']
                 if self.service_description['version']:
@@ -258,7 +258,8 @@ class ReflectRpcShell(Cmd):
 
         method = tokens.pop(0)
         try:
-            print("Server replied:", self.client.rpc_call(method, *tokens))
+            result = self.client.rpc_call(method, *tokens)
+            print("Server replied:", json.dumps(result, indent=4, sort_keys=True))
         except RpcError as e:
             print(e)
 

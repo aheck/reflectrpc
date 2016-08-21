@@ -82,8 +82,8 @@ class RpcShTests(unittest.TestCase):
             child.expect('================\r\n\r\n')
             child.expect("Type 'help' for available commands\r\n\r\n")
             child.expect('RPC server: localhost:5500\r\n\r\n')
-            child.expect('Self-description of Service:\r\n')
-            child.expect('============================\r\n')
+            child.expect('Self-description of the Service:\r\n')
+            child.expect('================================\r\n')
             child.expect('Example RPC Service \(1.0\)\r\n')
             child.expect('This is an example service for ReflectRPC\r\n')
             child.expect('\(rpc\) ')
@@ -101,7 +101,7 @@ class RpcShTests(unittest.TestCase):
             child.expect('get_username\(\)\r\n')
 
             child.sendline('exec echo "Hello Server"')
-            child.expect('Server replied: Hello Server\r\n')
+            child.expect('Server replied: "Hello Server"\r\n')
 
             child.sendline('exec add 5 6')
             child.expect('Server replied: 11\r\n')
