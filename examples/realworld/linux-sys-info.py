@@ -43,19 +43,19 @@ def get_cpuinfo():
             if m:
                 cpu['processor'] = int(m.group(1))
 
-            m = re.search(r'^vendor_id\s*:\s+(\d+)$', data, re.MULTILINE)
+            m = re.search(r'^vendor_id\s*:\s+(\w.+)$', data, re.MULTILINE)
             if m:
                 cpu['vendor_id'] = m.group(1)
 
-            m = re.search(r'^cpu family\s*:\s+(\w+)$', data, re.MULTILINE)
+            m = re.search(r'^cpu family\s*:\s+(\d+)$', data, re.MULTILINE)
             if m:
-                cpu['cpu_family'] = m.group(1)
+                cpu['cpu_family'] = int(m.group(1))
 
             m = re.search(r'^model\s*:\s+(\d+)$', data, re.MULTILINE)
             if m:
                 cpu['model'] = int(m.group(1))
 
-            m = re.search(r'^model name\s*:\s+(\w+)$', data, re.MULTILINE)
+            m = re.search(r'^model name\s*:\s+(\w.+)$', data, re.MULTILINE)
             if m:
                 cpu['model_name'] = m.group(1)
 
@@ -83,7 +83,7 @@ def get_cpuinfo():
             if m:
                 cpu['cpu_cores'] = int(m.group(1))
 
-            m = re.search(r'^fpu\s*:\s+(\d+)$', data, re.MULTILINE)
+            m = re.search(r'^fpu\s*:\s+(\w+)$', data, re.MULTILINE)
             if m:
                 cpu['fpu'] = False
                 if m.group(1) == 'yes':
@@ -169,12 +169,12 @@ cpuInfo.add_field('cpus', 'array', 'Array of CPU hashes')
 cpu = reflectrpc.JsonHashType('CPU', 'Information about a single CPU')
 cpu.add_field('processor', 'int', 'Number of this CPU (e.g. 0 for the first CPU in this system)')
 cpu.add_field('vendor_id', 'string', 'Vendor name')
-cpu.add_field('cpu_family', 'string', 'Vendor name')
+cpu.add_field('cpu_family', 'int', 'CPU family ID')
 cpu.add_field('model', 'int', 'Model identifier')
 cpu.add_field('model_name', 'string', 'Model name of this CPU')
 cpu.add_field('stepping', 'int', 'Stepping of the CPU (which basically is the CPUs revision)')
 cpu.add_field('cpu_mhz', 'float', 'Clock rate of this CPU in MHz')
-cpu.add_field('cache_size', 'string', 'Size of the L2 cache of this CPU in KB')
+cpu.add_field('cache_size', 'int', 'Size of the L2 cache of this CPU in KB')
 cpu.add_field('physical_id', 'int', 'ID of the physical processor this CPU belongs to')
 cpu.add_field('core_id', 'int', 'ID of CPU core this CPU entry represents')
 cpu.add_field('cpu_cores', 'int', 'Number of CPU cores')
