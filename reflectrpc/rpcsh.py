@@ -195,6 +195,43 @@ class ReflectRpcShell(Cmd):
         if exit:
             sys.exit(1)
 
+    def complete_doc(self, text, line, start_index, end_index):
+        return self.function_completion(text, line)
+
+    def complete_exec(self, text, line, start_index, end_index):
+        return self.function_completion(text, line)
+
+    def complete_notify(self, text, line, start_index, end_index):
+        return self.function_completion(text, line)
+
+    def function_completion(self, text, line):
+        if len(line.split()) > 2:
+            return []
+
+        if len(line.split()) == 2 and text == '':
+            return []
+
+        result = [f['name'] for f in self.functions if f['name'].startswith(text)]
+
+        if len(result) == 1 and result[0] == text:
+            return []
+
+        return result
+
+    def complete_type(self, text, line, start_index, end_index):
+        if len(line.split()) > 2:
+            return []
+
+        if len(line.split()) == 2 and text == '':
+            return []
+
+        result = [t['name'] for t in self.custom_types if t['name'].startswith(text)]
+
+        if len(result) == 1 and result[0] == text:
+            return []
+
+        return result
+
     def do_help(self, line):
         if not line:
             print("list   - List all RPC functions advertised by the server")
@@ -301,9 +338,3 @@ class ReflectRpcShell(Cmd):
 
     def do_quit(self, line):
         sys.exit(0)
-
-    def do_greet(self, line):
-        print("ReflectRpc Shell")
-
-    def do_EOF(self, line):
-        return True

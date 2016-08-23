@@ -70,6 +70,56 @@ class RpcShTests(unittest.TestCase):
         exit_status = os.system("cd .. && %s rpcsh --help > /dev/null" % (python))
         self.assertEqual(exit_status, 0)
 
+    def test_rpcsh_complete_function_names(self):
+        rpcsh = ReflectRpcShell('fakename', 0)
+        rpcsh.functions = [
+                {'name': 'get_something'},
+                {'name': 'get_anotherthing'},
+                {'name': 'echo'},
+                {'name': 'echoEcho'},
+                {'name': 'add'},
+        ]
+
+        result = rpcsh.function_completion('', 'exec ')
+        self.assertEqual(result, ['get_something', 'get_anotherthing', 'echo', 'echoEcho', 'add'])
+
+        result = rpcsh.function_completion('get_', 'exec get_')
+        self.assertEqual(result, ['get_something', 'get_anotherthing'])
+
+        result = rpcsh.function_completion('ad', 'exec ad')
+        self.assertEqual(result, ['add'])
+
+        result = rpcsh.function_completion('add', 'exec add')
+        self.assertEqual(result, [])
+
+        result = rpcsh.function_completion('echo', 'exec echo')
+        self.assertEqual(result, ['echo', 'echoEcho'])
+
+    def test_rpcsh_complete_type_names(self):
+        rpcsh = ReflectRpcShell('fakename', 0)
+        rpcsh.custom_types = [
+                {'name': 'AddressExtension'},
+                {'name': 'AddressEntry'},
+                {'name': 'CPU'},
+                {'name': 'CPUInfo'},
+                {'name': 'Order'},
+        ]
+
+        result = rpcsh.complete_type('', 'exec ', 0, 0)
+        self.assertEqual(result, ['AddressExtension', 'AddressEntry', 'CPU', 'CPUInfo', 'Order'])
+
+        result = rpcsh.complete_type('Address', 'exec Address', 0, 0)
+        self.assertEqual(result, ['AddressExtension', 'AddressEntry'])
+
+        result = rpcsh.complete_type('Ord', 'exec Ord', 0, 0)
+        self.assertEqual(result, ['Order'])
+
+        result = rpcsh.complete_type('Order', 'exec Order', 0, 0)
+        self.assertEqual(result, [])
+
+        result = rpcsh.complete_type('CPU', 'exec CPU', 0, 0)
+        self.assertEqual(result, ['CPU', 'CPUInfo'])
+
     def test_rpcsh_expect(self):
         server = ServerRunner('../examples/server.py', 5500)
         server.run()
