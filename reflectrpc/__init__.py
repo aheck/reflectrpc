@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from builtins import bytes, dict, list, int, float, str
 
 import json
+import re
 import traceback
 
 version = '0.7.5'
@@ -428,6 +429,76 @@ class JsonHashType(object):
 
         return d
 
+def validate_primitive_type_name(name):
+    """
+    Check if a name is a valid primitive type
+
+    Args:
+        name (str): Name of the supposed primitive type
+
+    Returns:
+        bool: True if valid, False if not
+    """
+    return name in json_types
+
+def validate_custom_type_name(name):
+    """
+    Check if a name is a valid name for a custom type
+
+    Args:
+        name (str): Name of the supposed custom type
+
+    Returns:
+        bool: True if valid, False if not
+    """
+    if re.match(r'[A-Z][A-Za-z]*[0-9]*', name):
+        return True
+
+def validate_typed_array_declaration(type_decl):
+    """
+    Check if a type declaration is a valid typed array
+
+    Args:
+        type_decl (str): The type declaration supposed to declare a typed array
+
+    Returns:
+        bool: True if valid, False if not
+    """
+    if type_decl.startswith('array<') and type_decl.endswith('>'):
+        array_type = type_decl[len('array<'):-1]
+        if array_type in json_types:
+            return True
+        if validate_custom_type_name(array_type):
+            return True
+
+    return False
+
+def validate_type_declaration(type_decl):
+    """
+    Check if a type delaration is valid
+
+    A type declaration can either declare a primitive value (e.g. int, float,
+    string etc.), a custom type value (Enum or Named Hash) or a typed array
+    containing a value of either a primitive type or a custom type (e.g.
+    array<int>, array<{CustomType}>, ...)
+
+    Args:
+        type_decl (str): The type declaration to validate
+
+    Returns:
+        bool: True if valid, False if not
+    """
+    if validate_primitive_type_name(type_decl):
+        return True
+
+    if validate_custom_type_name(type_decl):
+        return True
+
+    if validate_typed_array_declaration(type_decl):
+        return True
+
+    return False
+
 class RpcFunction(object):
     """
     Description of a function exposed as Remote Procedure Call
@@ -446,7 +517,7 @@ class RpcFunction(object):
         Raises:
             ValueError: If result_type is an invalid type or func is not a callable
         """
-        if result_type not in json_types and not result_type[0].isupper():
+        if not validate_type_declaration(result_type):
             raise ValueError("Invalid JSON-RPC type: %s" % (result_type))
 
         if not callable(func):
@@ -475,7 +546,7 @@ class RpcFunction(object):
         Raises:
             ValueError: If typ is not a valid type
         """
-        if not typ in json_types and not typ[0].isupper():
+        if not validate_type_declaration(typ):
             raise ValueError("Invalid JSON-RPC type: %s" % (typ))
 
         param = {'name': name, 'type': typ, 'description': description}

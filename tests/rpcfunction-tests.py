@@ -116,7 +116,7 @@ class RpcFunctionTests(unittest.TestCase):
             RpcFunction(dummy_function, 'dummy',
                 'Dummy function', 'ImaginaryCustomType', 'Return value')
         except:
-            self.fail("RpcFunction constructor raised unexpected exception!")
+            self.fail("RpcFunction constructor raised an unexpected exception!")
 
     def test_custom_type_in_add_param(self):
         dummy_func = RpcFunction(dummy_function, 'dummy',
@@ -124,7 +124,47 @@ class RpcFunctionTests(unittest.TestCase):
         try:
             dummy_func.add_param('ImaginaryCustomType', 'a', 'First parameter')
         except:
-            self.fail("add_param raised unexpected exception!")
+            self.fail("add_param raised an unexpected exception!")
+
+    # Typed array tests
+    def test_typed_array_as_result_type(self):
+        try:
+            RpcFunction(dummy_function, 'dummy', 'Dummy function',
+                    'array<int>', 'Typed array of integers')
+        except:
+            self.fail('RpcFunction constructor raised an unexpected exception')
+
+    def test_typed_array_with_custom_type_as_result_type(self):
+        try:
+            RpcFunction(dummy_function, 'dummy', 'Dummy function',
+                    'array<SomeCustomType>', 'Returns the array passed by the caller')
+        except:
+            self.fail('RpcFunction constructor raised an unexpected exception')
+
+    def test_invalid_typed_array_as_result_type(self):
+        self.assertRaises(ValueError, RpcFunction, dummy_function, 'dummy',
+                'Dummy function', 'array<noint>', 'Return value')
+
+    def test_typed_array_in_add_param(self):
+        dummy_func = RpcFunction(dummy_function, 'dummy',
+                'Dummy function', 'int', 'Return value')
+        try:
+            dummy_func.add_param('array<int>', 'a', 'Typed array of integers')
+        except:
+            self.fail("add_param raised an unexpected exception!")
+
+    def test_invalid_typed_array_in_add_param(self):
+        dummy_func = RpcFunction(dummy_function, 'dummy',
+                'Dummy function', 'int', 'Return value')
+        self.assertRaises(ValueError, dummy_func.add_param, 'array<noint>', 'a', 'First parameter')
+
+    def test_typed_array_with_custom_type_in_add_param(self):
+        dummy_func = RpcFunction(dummy_function, 'dummy',
+                'Dummy function', 'int', 'Return value')
+        try:
+            dummy_func.add_param('array<SomeCustomType>', 'a', 'First parameter')
+        except:
+            self.fail("add_param raised an unexpected exception!")
 
 if __name__ == '__main__':
     unittest.main()
