@@ -373,8 +373,7 @@ class RpcProcessorTests(unittest.TestCase):
         address_type.add_field('firstname', 'string', 'First name')
         address_type.add_field('lastname', 'string', 'Last name')
         address_type.add_field('street1', 'string', 'First address line')
-        address_type.add_field('street2', 'string', 'Second address line')
-        address_type.add_field('zipcode', 'string', 'Zip code')
+        address_type.add_field('zipcode', 'int', 'Zip code')
         address_type.add_field('city', 'string', 'City')
 
         rpc.add_custom_type(address_type)
@@ -390,9 +389,21 @@ class RpcProcessorTests(unittest.TestCase):
         self.assertEqual(reply['error'], {'name': 'TypeError', 'message':
             "echo_hash: Named hash parameter 'address' of type 'Address' requires a hash value but got 'string'"})
 
-        reply = rpc.process_request('{"method": "echo_hash", "params": [{"name": "test", "number": 42}], "id": 2}')
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"firstname": "first", "lastname": "last", "street1": "", "zipcode": 56732, "city": ""}], "id": 2}')
         self.assertEqual(reply['error'], None)
-        self.assertEqual(reply['result'], {'name': 'test', 'number': 42})
+        self.assertEqual(reply['result'], {
+            'firstname': 'first',
+            'lastname': 'last',
+            'street1': '',
+            'zipcode': 56732,
+            'city': '',
+        })
+
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"firstname": "first", "lastname": "test", "street1": "", "zipcode": 56732, "city": "", "number": 42}], "id": 3}')
+        self.assertEqual(reply['result'], None)
+        self.assertEqual(reply['error'], {'name': 'TypeError',
+            'message': "echo_hash: Named hash parameter 'address' of type 'Address': Unknown field 'number'"
+        })
 
     def test_type_checks_for_fields_of_named_hashes(self):
         rpc = RpcProcessor()
@@ -414,7 +425,7 @@ class RpcProcessorTests(unittest.TestCase):
 
         rpc.add_function(echo_hash_func)
 
-        # Call with an empty hash should get us an error mentioning all missing fields
+        # Call with an empty hash should get us an error mentioning the first missing field
         reply = rpc.process_request('{"method": "echo_hash", "params": [{}], "id": 1}')
         self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'TypeError',
@@ -562,6 +573,28 @@ class RpcProcessorTests(unittest.TestCase):
                 rpcinfo)
         self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], 'Authenticated: True; Username: unittest')
+
+    def test_typed_arrays_basic(self):
+        rpc = RpcProcessor()
+
+        func = RpcFunction(echo_array, 'echo_array', 'Expects an array of ints and returns it',
+                'array<int>', 'Returns the array passed by the caller')
+        func.add_param('array<int>', 'numbers', 'An array of integer values')
+
+        rpc.add_function(func)
+        reply = None
+
+        try:
+            reply = rpc.process_request('{"method": "echo_array", "params": [[1, 2, 3, 4, 5, 6 ,7, 8, 9]], "id": 1}')
+        except JsonRpcError:
+            self.fail("process_request raised unexpected exception!")
+
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], [1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+        reply = rpc.process_request('{"method": "echo_array", "params": [[1, 2, "invalid string", 9]], "id": 1}')
+        self.assertEqual(reply['result'], None)
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_array: Expected value of type 'int' for parameter '[2]' but got value of type 'string'"})
 
 
 if __name__ == '__main__':
