@@ -5,7 +5,7 @@ import json
 import re
 import traceback
 
-version = '0.7.5'
+version = '0.7.6'
 
 json_types = ['int', 'bool', 'float', 'string', 'array', 'hash', 'base64']
 

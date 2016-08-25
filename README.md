@@ -122,15 +122,16 @@ install it with a single command:
 
 ReflectRPC supports the following basic datatypes:
 
-|Type   |Description                        |
-|-------|:----------------------------------|
-|bool   | true or false                     |
-|int    | integer number                    |
-|float  | floating point number             |
-|string | string                            |
-|array  | JSON array with arbitrary content |
-|hash   | JSON hash with arbitrary content  |
-|base64 | Base64 encoded binary data        |
+|Type        |Description                        |
+|------------|:----------------------------------|
+|bool        | true or false                     |
+|int         | integer number                    |
+|float       | floating point number             |
+|string      | string                            |
+|array       | JSON array with arbitrary content |
+|hash        | JSON hash with arbitrary content  |
+|base64      | Base64 encoded binary data        |
+|array<type> | Typed array. Only elements of the given type are allowed. E.g. array<int>, array<string> etc. Custom types are also supported as elements. |
 
 ## Custom Datatypes ##
 

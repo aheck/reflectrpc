@@ -2,6 +2,12 @@
 Changelog
 *********
 
+0.7.6 (2016-)
+==================
+
+- Support for typed arrays
+- Autocompletion of type and function names in rpcsh
+
 0.7.5 (2016-08-17)
 ==================
 
