@@ -164,7 +164,7 @@ def get_meminfo():
 # create custom types
 cpuInfo = reflectrpc.JsonHashType('CPUInfo', 'Information about CPUs')
 cpuInfo.add_field('numCPUs', 'int', 'Number of CPUs')
-cpuInfo.add_field('cpus', 'array', 'Array of CPU hashes')
+cpuInfo.add_field('cpus', 'array<CPU>', 'Array of the CPUs available on the system')
 
 cpu = reflectrpc.JsonHashType('CPU', 'Information about a single CPU')
 cpu.add_field('processor', 'int', 'Number of this CPU (e.g. 0 for the first CPU in this system)')

@@ -399,8 +399,7 @@ class JsonHashType(object):
         Raises:
             ValueError: If typ is not a valid type
         """
-        if typ not in json_types and not typ[0].isupper():
-            raise ValueError("Invalid JSON-RPC type: %s" % (typ))
+        validate_type_declaration(typ)
 
         field = {}
 
