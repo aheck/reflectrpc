@@ -808,6 +808,9 @@ class RpcProcessor(object):
                     self.check_named_hash(func, param, value)
         # typed array?
         elif declared_type.startswith('array<'):
+            if real_type != 'list':
+                raise InvalidPrimitiveTypeError(name, declared_type, self.py2json[real_type])
+
             array_type = declared_type[len('array<'):-1]
             i = 0
             for v in value:

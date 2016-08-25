@@ -33,6 +33,9 @@ def is_authenticated(rpcinfo):
 def get_username(rpcinfo):
     return rpcinfo['username']
 
+def echo_ints(ints):
+    return ints
+
 def build_example_rpcservice():
     phone_type_enum = reflectrpc.JsonEnumType('PhoneType', 'Type of a phone number')
     phone_type_enum.add_value('HOME', 'Home phone')
@@ -111,5 +114,10 @@ def build_example_rpcservice():
             'string', 'The username of the logged in user')
     username_func.require_rpcinfo()
     jsonrpc.add_function(username_func)
+
+    ints_func = reflectrpc.RpcFunction(echo_ints, 'echo_ints', 'Expects an array of ints and returns it',
+            'array<int>', 'An array of integers')
+    ints_func.add_param('array<int>', 'ints', 'An array of ints')
+    jsonrpc.add_function(ints_func)
 
     return jsonrpc

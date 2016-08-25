@@ -625,17 +625,17 @@ class RpcProcessorTests(unittest.TestCase):
         func.add_param('array<int>', 'numbers', 'An array of integer values')
 
         rpc.add_function(func)
-        reply = None
 
-        try:
-            reply = rpc.process_request('{"method": "echo_array", "params": [[1, 2, 3, 4, 5, 6 ,7, 8, 9]], "id": 1}')
-        except JsonRpcError:
-            self.fail("process_request raised unexpected exception!")
-
+        reply = rpc.process_request('{"method": "echo_array", "params": [[1, 2, 3, 4, 5, 6 ,7, 8, 9]], "id": 1}')
         self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], [1, 2, 3, 4, 5, 6, 7, 8, 9])
 
-        reply = rpc.process_request('{"method": "echo_array", "params": [[1, 2, "invalid string", 9]], "id": 1}')
+        # test what happens if we send a non-array type
+        reply = rpc.process_request('{"method": "echo_array", "params": [5], "id": 2}')
+        self.assertEqual(reply['error'], {'message': "echo_array: Expected value of type 'array<int>' for parameter 'numbers' but got value of type 'int'", 'name': 'TypeError'})
+        self.assertEqual(reply['result'], None)
+
+        reply = rpc.process_request('{"method": "echo_array", "params": [[1, 2, "invalid string", 9]], "id": 3}')
         self.assertEqual(reply['result'], None)
         self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_array: Expected value of type 'int' for parameter '[2]' but got value of type 'string'"})
 
