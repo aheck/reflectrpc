@@ -642,7 +642,7 @@ class RpcProcessorTests(unittest.TestCase):
     def test_typed_arrays_with_custom_types(self):
         rpc = RpcProcessor()
 
-        example_type = JsonHashType('Example', 'An example named hash')
+        example_type = JsonHashType('Example', 'A named hash')
         example_type.add_field('somestr', 'string', 'Some string')
         example_type.add_field('someint', 'int', 'Some integer')
 
@@ -663,6 +663,31 @@ class RpcProcessorTests(unittest.TestCase):
         self.assertEqual(reply['error'], None)
         self.assertEqual(reply['result'], [{'somestr': 'str1', 'someint': 5}, {'somestr': 'str2', 'someint': 6}])
 
+    def test_custom_types_with_typed_array_fields(self):
+        rpc = RpcProcessor()
+
+        example_type = JsonHashType('Example', 'A named hash')
+        example_type.add_field('somestrs', 'array<string>', 'Some strings')
+        example_type.add_field('someints', 'array<int>', 'Some integers')
+
+        func = RpcFunction(echo_hash, 'echo_hash', 'Expects an Example hash and returns it',
+                'Example', 'Returns the hash passed by the caller')
+        func.add_param('Example', 'examples', 'An example hash')
+
+        rpc.add_custom_type(example_type)
+        rpc.add_function(func)
+
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"somestrs": "", "someints": ""}], "id": 1}')
+        self.assertEqual(reply['result'], None)
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_hash: Named hash parameter 'examples' of type 'Example' has invalid field 'somestrs': Expected array<string> but got string"})
+
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"somestrs": ["str1", "str2"], "someints": [1, 2, "test", 3]}], "id": 2}')
+        self.assertEqual(reply['result'], None)
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_hash: Named hash parameter 'examples' of type 'Example' has invalid field 'someints': Expected int but got string"})
+
+        reply = rpc.process_request('{"method": "echo_hash", "params": [{"somestrs": ["str1", "str2"], "someints": [1, 2, 3]}], "id": 3}')
+        self.assertEqual(reply['error'], None)
+        self.assertEqual(reply['result'], {'somestrs': ['str1', 'str2'], 'someints': [1, 2, 3]})
 
 if __name__ == '__main__':
     unittest.main()
