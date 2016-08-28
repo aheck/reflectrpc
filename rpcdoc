@@ -13,6 +13,9 @@ def format_type(typename):
 
     if typename[0].isupper():
         return '<a href="#type-%s">%s</a>' % (typename, typename)
+    elif typename.startswith('array<'):
+        subtypename = typename[len('array<'):-1]
+        return 'array&lt;%s&gt;' % (format_type(subtypename))
 
     return typename
 
