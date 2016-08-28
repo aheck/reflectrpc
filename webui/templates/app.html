@@ -1,0 +1,56 @@
+{% extends 'layout.html' %}
+{% block content %}
+<script>
+$( document ).ready(function() {
+    $("div.function").hide();
+    $("a.function").click(function(){
+        $(this).next().next().slideToggle();
+    });
+});
+</script>
+
+Connected to:
+<table class="connected_to">
+<tr>
+  <td>Host:</td>
+  <td>{{host}}</td>
+</tr>
+<tr>
+  <td>Port</td>
+  <td>{{port}}</td>
+</tr>
+<tr>
+  <td>Over HTTP:</td>
+  <td>{{http}}</td>
+</tr>
+</table>
+
+<br>
+
+{% for func in functions %}
+<div class="function_wrapper">
+<a class="function" href="javascript:;">{{ func['name_with_params'] }}</a><br>
+<div class="function">
+<p>{{ func['description'] }}</p>
+<h3>Params:</h3>
+<table>
+{% for param in func['params'] %}
+<tr>
+    <td>{{param['name']}}</td>
+    <td>{{param['type']}}</td>
+    <td>{{param['description']}}</td>
+</tr>
+{% endfor %}
+</table>
+<p>Returns: {{ func['result_type'] }} - {{ func['result_desc'] }}</p>
+
+<p>
+    <textarea rows="10" cols="80"></textarea><br>
+    <button>Execute</button><br>
+    <div></div>
+</p>
+</div>
+</div>
+{% endfor %}
+
+{% endblock %}

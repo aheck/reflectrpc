@@ -1,0 +1,38 @@
+{% extends 'layout.html' %}
+{% block content %}
+<br>
+<br>
+<br>
+<br>
+<div class="login_center">
+<form action="/" method="POST">
+<fieldset class="login">
+<legend>Connect to a ReflectRPC Server</legend>
+<table class="login">
+<tr>
+    <td><label for="host">Host:</label></td>
+    <td><input id="host" name="host" type="text" value="localhost"></td>
+</tr>
+<tr>
+    <td><label for="port">Port:</label></td>
+    <td><input id="port" name="port" type="text" value="5500"></td>
+</tr>
+<tr>
+    <td><label for="name">HTTP:</label></td>
+    <td><input id="name" name="http" type="checkbox"></td>
+</tr>
+<tr>
+    <td><label for="username">Username:</label></td>
+    <td><input id="username" name="username" type="text"></td>
+</tr>
+<tr>
+    <td><label for="password">Password:</label></td>
+    <td><input id="password" name="password" type="password"></td>
+</tr>
+</table>
+<br>
+<button type="submit" name="action" value="">Connect</button>
+</fieldset>
+</form>
+</div>
+{% endblock %}
