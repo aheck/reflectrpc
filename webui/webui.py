@@ -2,7 +2,7 @@
 
 import os
 import sys
-from flask import Flask, render_template, request
+from flask import Flask, Response, render_template, request, session
 
 sys.path.append('..')
 
@@ -10,6 +10,19 @@ from reflectrpc.client import RpcClient
 from reflectrpc.cmdline import fetch_service_metainfo
 
 app = Flask(__name__)
+
+# not secure but since this application is supposed to run on your local PC
+# and not in a production environment we don't care for the moment
+app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
+
+def connect_client(host, port, http, username, password):
+    client = RpcClient(host, port)
+    if http:
+        client.enable_http()
+        if username and password:
+            client.enable_http_basic_auth(username, password)
+
+    return client
 
 @app.route('/', methods=['GET', 'POST'])
 def index_page():
@@ -31,15 +44,22 @@ def index_page():
         if 'password' in request.form:
             password = request.form['password']
 
-        client = RpcClient(host, port)
+        session['host'] = host
+        session['port'] = port
+        session['http'] = http
+        session['username'] = username
+        session['password'] = password
+
+        client = connect_client(host, port, http, username, password)
 
         if http:
             http = 'Yes'
-            client.enable_http()
         else:
             http = 'No'
 
         (service_description, functions, custom_types) = fetch_service_metainfo(client)
+
+        client.close_connection()
 
         for func in functions:
             func['name_with_params'] = func['name'] + '('
@@ -58,10 +78,25 @@ def index_page():
     else:
         return render_template('login.html')
 
-@app.route('/call_json_rpc')
+@app.route('/call_jsonrpc', methods=['POST'])
 def call_json_rpc():
-    params = request.args.get('params', 0, type=str)
-    return jsonify(result=a + b)
+    funcname = request.form.get('funcname', '', type=str)
+    params = request.form.get('params', '', type=str)
+
+    req_id = 0
+    if 'req_id' in session:
+        req_id = int(session['req_id'])
+
+    req_id += 1
+    session['req_id'] = req_id
+
+    client = connect_client(session['host'], session['port'], session['http'],
+            session['username'], session['password'])
+    result = client.rpc_call_raw('{"method": "%s", "params": [%s], "id": %d}'
+            % (funcname, params, req_id))
+    client.close_connection()
+
+    return Response(result, mimetype='application/json')
 
 if __name__ == '__main__':
     app.run(debug=True)

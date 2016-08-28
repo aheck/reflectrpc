@@ -60,3 +60,7 @@ table.connected_to td {
     margin: 0;
     border: 1px solid #f3f3f3;
 }
+
+div.result {
+    white-space: pre;
+}

@@ -7,6 +7,29 @@ $(document).ready(function() {
         $(this).next().next().slideToggle();
     });
 });
+
+function callJsonRpc(output, funcname, params) {
+    params = $('#' + params).val();
+
+    postData = 'funcname=';
+    postData += encodeURIComponent(funcname);
+    postData += '&params=';
+    postData += encodeURIComponent(params);
+
+    $.ajax({
+        url: "/call_jsonrpc",
+        type: "POST",
+        data: postData,
+        processData: false,
+        contentType: 'application/x-www-form-urlencoded',
+        success: function(result){
+            $('#' + output).text('Server replied: ' + JSON.stringify(result, null, 4))
+        },
+        error: function(jqXHR, textStatus, err) {
+            $('#' + output).text('ERROR: ' + err)
+        }
+    });
+}
 </script>
 
 Connected to:
@@ -29,25 +52,25 @@ Connected to:
 
 {% for func in functions %}
 <div class="function_wrapper">
-<a class="function" href="javascript:;">{{ func['name_with_params'] }}</a><br>
+<a class="function" href="javascript:;">{{func['name_with_params']}}</a><br>
 <div class="function">
-<p>{{ func['description'] }}</p>
+<p>{{func['description']}}</p>
 <h3>Params:</h3>
 <table>
 {% for param in func['params'] %}
 <tr>
-    <td>{{param['name']}}</td>
-    <td>{{param['type']}}</td>
-    <td>{{param['description']}}</td>
+  <td>{{param['name']}}</td>
+  <td>{{param['type']}}</td>
+  <td>{{param['description']}}</td>
 </tr>
 {% endfor %}
 </table>
-<p>Returns: {{ func['result_type'] }} - {{ func['result_desc'] }}</p>
+<p>Returns: {{func['result_type']}} - {{func['result_desc']}}</p>
 
 <p>
-    <textarea rows="10" cols="80"></textarea><br>
-    <button>Execute</button><br>
-    <div></div>
+  <textarea id="params_{{func['name']}}" rows="10" cols="80"></textarea><br>
+  <button onclick="javascript:callJsonRpc('result_{{func['name']}}', '{{func['name']}}', 'params_{{func['name']}}');">Execute</button><br>
+  <div id="result_{{func['name']}}" class="result"></div>
 </p>
 </div>
 </div>
