@@ -1,5 +1,19 @@
 {% extends 'layout.html' %}
 {% block content %}
+<script>
+$(document).ready(function() {
+    $("#http").click(function(){
+        $("#username").prop('disabled', function () {
+            return !$(this).prop('disabled');
+        });
+
+        $("#password").prop('disabled', function () {
+            return !$(this).prop('disabled');
+        });
+    });
+});
+</script>
+
 <br>
 <br>
 <br>
@@ -18,16 +32,16 @@
     <td><input id="port" name="port" type="text" value="5500"></td>
 </tr>
 <tr>
-    <td><label for="name">HTTP:</label></td>
-    <td><input id="name" name="http" type="checkbox"></td>
+    <td><label for="http">HTTP:</label></td>
+    <td><input id="http" name="http" type="checkbox"></td>
 </tr>
 <tr>
     <td><label for="username">Username:</label></td>
-    <td><input id="username" name="username" type="text"></td>
+    <td><input id="username" name="username" type="text" disabled="disabled"></td>
 </tr>
 <tr>
     <td><label for="password">Password:</label></td>
-    <td><input id="password" name="password" type="password"></td>
+    <td><input id="password" name="password" type="password" disabled="disabled"></td>
 </tr>
 </table>
 <br>
