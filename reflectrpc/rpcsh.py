@@ -117,6 +117,7 @@ class ReflectRpcShell(Cmd):
 
     def connect(self):
         self.client = RpcClient(self.host, self.port)
+        self.client.enable_auto_reconnect()
 
         if self.http_enabled:
             self.client.enable_http(self.http_path)

@@ -2,11 +2,13 @@ from __future__ import unicode_literals
 from builtins import bytes, dict, list, int, float, str
 
 import base64
+import errno
 import json
 import os.path
 import ssl
 import sys
 import socket
+import time
 
 if sys.version_info.major == 2:
     class ConnectionRefusedError(Exception):
@@ -92,6 +94,23 @@ class RpcClient(object):
         self.http_basic_auth = False
         self.http_basic_username = None
         self.http_basic_password = None
+
+        self.auto_reconnect = False
+
+    def enable_auto_reconnect(self):
+        """
+        Enable automatic reconnect in case the connection was closed by the peer
+
+        RpcClient tries to reconnect once, if it still doesn't work it gives up
+        and raises an exception
+        """
+        self.auto_reconnect = True
+
+    def disable_auto_reconnect(self):
+        """
+        Disable automatic reconnect in case the connection was closed by the peer
+        """
+        self.auto_reconnect = False
 
     def enable_tls(self, ca_file, check_hostname=True):
         """
@@ -219,12 +238,24 @@ class RpcClient(object):
             if not self.is_connected():
                 self.__connect()
 
-            self.send_request(json_data)
+            retry_count = 0
+            json_reply = None
 
-            if send_only:
-                return
+            while True:
+                try:
+                    self.send_request(json_data)
 
-            json_reply = self.receive_response()
+                    if send_only:
+                        return
+
+                    json_reply = self.receive_response()
+                    break
+                except IOError as e:
+                    if e.errno == errno.ECONNRESET and self.auto_reconnect and retry_count < 1:
+                        retry_count += 1
+                        self.__connect()
+                    else:
+                        raise e
 
             return json_reply
         except (ConnectionRefusedError, socket.error, SSLEOFError,
@@ -238,9 +269,10 @@ class RpcClient(object):
         if self.http_enabled:
             http_headers = [
                     'POST %s HTTP/1.1' % (self.http_path),
-                    'Host: %s' % (self.host),
+                    'Host: %s:%d' % (self.host, self.port),
                     'Content-Type: application/json-rpc',
-                    'Content-Length: %d' % (len(data))
+                    'Content-Length: %d' % (len(data)),
+                    'Connection: keep-alive'
             ]
 
             if self.http_basic_auth:
@@ -265,13 +297,20 @@ class RpcClient(object):
             return self.receive_line_response()
 
     def receive_http_response(self):
+        millis = int(round(time.time() * 1000))
         data = self.sock.recv(4096)
 
-        while not b"\r\n" in data:
+        while not b"\r\n\r\n" in data:
             if len(data) >= 4096:
-                raise Exception("Couldn't find a complete HTTP header within the first 4096 bytes of the server response!")
+                raise HttpException("Couldn't find a complete HTTP header within the first 4096 bytes of the server response!")
 
-            data += self.sock.recv(4096)
+            newchunk = self.sock.recv(4096)
+            if len(newchunk) == 0:
+                newmillis = int(round(time.time() * 1000))
+                if newmillis - millis > 2000:
+                    break;
+
+            data += newchunk
 
         header = None
 
@@ -290,7 +329,7 @@ class RpcClient(object):
         statusline = headerlines.pop(0)
         fields = statusline.split(' ')
 
-        if fields[0] != 'HTTP/1.1':
+        if fields[0] != 'HTTP/1.0' and fields[0] != 'HTTP/1.1':
             raise HttpException("Unexpected HTTP version: '%s'" % (fields[0]))
 
         if fields[1] != '200':
@@ -423,7 +462,6 @@ class RpcClient(object):
             socket_type = socket.AF_UNIX
 
         sock = socket.socket(socket_type, socket.SOCK_STREAM)
-        sock.settimeout(self.timeout)
 
         if self.host.startswith(unix_prefix):
             path = self.host[len(unix_prefix):]
@@ -455,6 +493,7 @@ class RpcClient(object):
             else:
                 sock = ssl.wrap_socket(sock, ssl_version=self.tls_version)
 
+        sock.settimeout(self.timeout)
         self.sock = sock
 
     def __check_ca_file(self):

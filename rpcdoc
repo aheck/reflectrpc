@@ -26,6 +26,7 @@ parser.add_argument("outfile", metavar='OUTFILE', type=str, help="Output file")
 
 args = parser.parse_args()
 client = reflectrpc.cmdline.connect_client(args)
+client.enable_auto_reconnect()
 
 (service_description, functions, custom_types) = reflectrpc.cmdline.fetch_service_metainfo(client)
 
