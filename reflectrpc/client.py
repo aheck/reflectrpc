@@ -300,17 +300,23 @@ class RpcClient(object):
         millis = int(round(time.time() * 1000))
         data = self.sock.recv(4096)
 
-        while not b"\r\n\r\n" in data:
-            if len(data) >= 4096:
-                raise HttpException("Couldn't find a complete HTTP header within the first 4096 bytes of the server response!")
+        try:
+            while not b"\r\n\r\n" in data:
+                if len(data) >= 4096:
+                    raise HttpException("Couldn't find a complete HTTP header within the first 4096 bytes of the server response!")
 
-            newchunk = self.sock.recv(4096)
-            if len(newchunk) == 0:
-                newmillis = int(round(time.time() * 1000))
-                if newmillis - millis > 2000:
-                    break;
+                newchunk = self.sock.recv(4096)
+                if len(newchunk) == 0:
+                    newmillis = int(round(time.time() * 1000))
+                    if newmillis - millis > 2000:
+                        break;
 
-            data += newchunk
+                data += newchunk
+        except IOError as e:
+            if e.errno == errno.ECONNRESET:
+                pass
+            else:
+                raise e
 
         header = None
 
