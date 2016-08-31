@@ -5,9 +5,10 @@ import base64
 import errno
 import json
 import os.path
+import select
+import socket
 import ssl
 import sys
-import socket
 import time
 
 if sys.version_info.major == 2:
@@ -284,8 +285,7 @@ class RpcClient(object):
             header = '\r\n'.join(http_headers) + '\r\n\r\n'
             header = header.encode('utf-8')
 
-            self.sock.sendall(header)
-            self.sock.sendall(data)
+            self.sock.sendall(header + data)
         else:
             data += '\r\n'.encode('utf-8')
             self.sock.sendall(data)
@@ -297,26 +297,17 @@ class RpcClient(object):
             return self.receive_line_response()
 
     def receive_http_response(self):
-        millis = int(round(time.time() * 1000))
-        data = self.sock.recv(4096)
+        data = b''
 
-        try:
-            while not b"\r\n\r\n" in data:
-                if len(data) >= 4096:
-                    raise HttpException("Couldn't find a complete HTTP header within the first 4096 bytes of the server response!")
+        reader = SocketReadIterator(self.sock, self.timeout)
+        for newchunk in reader:
+            data += newchunk
 
-                newchunk = self.sock.recv(4096)
-                if len(newchunk) == 0:
-                    newmillis = int(round(time.time() * 1000))
-                    if newmillis - millis > 2000:
-                        break;
+            if b"\r\n\r\n" in data:
+                break
 
-                data += newchunk
-        except IOError as e:
-            if e.errno == errno.ECONNRESET:
-                pass
-            else:
-                raise e
+            if len(data) >= 4096:
+                raise HttpException("Couldn't find a complete HTTP header within the first 4096 bytes of the server response!")
 
         header = None
 
@@ -507,3 +498,33 @@ class RpcClient(object):
         # confusing OpenSSL error
         with open(self.ca_file) as f:
             pass
+
+class SocketReadIterator:
+    """
+    Reads chunks of data from a blocking socket for a maximum of maxseconds
+    """
+    def __init__(self, socket, maxseconds):
+        self.socket = socket
+        self.maxseconds = maxseconds
+
+        self.time_start = int(round(time.time() * 1000))
+
+    def __iter__(self):
+        return self
+
+    # for Python 2.7 compatibility
+    def next(self):
+        return self.__next__()
+
+    def __next__(self):
+        time_now = int(round(time.time() * 1000))
+
+        if time_now - self.time_start > self.maxseconds * 1000:
+            # we have waited long enough
+            raise StopIteration
+        else:
+            rlist, wlist, xlist = select.select([self.socket.fileno()], [], [], 1)
+            data = b''
+            if rlist:
+                data = self.socket.recv(4096)
+            return data
