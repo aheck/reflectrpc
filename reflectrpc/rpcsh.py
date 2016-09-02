@@ -97,37 +97,16 @@ def split_exec_line(line):
     return tokens
 
 class ReflectRpcShell(Cmd):
-    def __init__(self, host, port):
+    def __init__(self, client):
         if issubclass(Cmd, object):
             super().__init__()
         else:
             Cmd.__init__(self)
 
-        self.host = host
-        self.port = port
-
-        self.tls_enabled = False
-        self.tls_hostname_check = False
-        self.ca = None
-        self.http_enabled = False
-        self.http_path = ''
-
-        self.client_auth_cert = None
-        self.client_auth_key = None
+        self.client = client
 
     def connect(self):
-        self.client = RpcClient(self.host, self.port)
         self.client.enable_auto_reconnect()
-
-        if self.http_enabled:
-            self.client.enable_http(self.http_path)
-
-        if self.tls_enabled:
-            self.client.enable_tls(self.ca, self.tls_hostname_check)
-
-        if self.client_auth_cert and self.client_auth_key:
-            self.client.enable_client_auth(self.client_auth_cert,
-                    self.client_auth_key)
 
         try:
             self.retrieve_service_description()
@@ -139,10 +118,10 @@ class ReflectRpcShell(Cmd):
             self.connection_failed_error(True)
 
         self.prompt = '(rpc) '
-        if self.host.startswith('unix://'):
-            self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s" % (self.host)
+        if self.client.host.startswith('unix://'):
+            self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s" % (self.client.host)
         else:
-            self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (self.host, self.port)
+            self.intro = "ReflectRPC Shell\n================\n\nType 'help' for available commands\n\nRPC server: %s:%i" % (self.client.host, self.client.port)
 
         if self.service_description:
             self.intro += "\n\nSelf-description of the Service:\n================================\n"
@@ -152,19 +131,6 @@ class ReflectRpcShell(Cmd):
                     self.intro += " (%s)\n" % (self.service_description['version'])
             if self.service_description['description']:
                 self.intro += self.service_description['description']
-
-    def enable_http(self, http_path='/rpc'):
-        self.http_enabled = True
-        self.http_path = http_path
-
-    def enable_tls(self, ca, check_hostname=True):
-        self.ca = ca
-        self.tls_enabled = True
-        self.tls_hostname_check = check_hostname
-
-    def enable_client_auth(self, cert_file, key_file):
-        self.client_auth_cert = cert_file
-        self.client_auth_key = key_file
 
     def retrieve_service_description(self):
         self.service_description = ''
@@ -188,7 +154,7 @@ class ReflectRpcShell(Cmd):
             pass
 
     def connection_failed_error(self, exit=False):
-        if self.host.startswith('unix://'):
+        if self.client.host.startswith('unix://'):
             print("Failed to connect to %s" % (self.client.host))
         else:
             print("Failed to connect to %s on TCP port %d" % (self.client.host, self.client.port))
@@ -338,4 +304,7 @@ class ReflectRpcShell(Cmd):
             print("%s(%s)" % (func['name'], ', '.join(paramlist)))
 
     def do_quit(self, line):
+        sys.exit(0)
+
+    def do_EOF(self, line):
         sys.exit(0)

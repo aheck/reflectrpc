@@ -5,77 +5,16 @@ from __future__ import print_function
 import sys
 import argparse
 
+import reflectrpc.cmdline
 from reflectrpc.rpcsh import ReflectRpcShell
 
-parser = argparse.ArgumentParser(description="Interactive shell to access JSON-RPC services (part of the ReflectRPC project)")
-
-parser.add_argument("host", metavar='HOST', type=str, help="Host to connect to")
-parser.add_argument("port", metavar='PORT', type=int, help="Port to connect to (omit if HOST is a UNIX domain socket)")
-
-parser.add_argument('--http', default=False, action='store_true',
-        help='Use HTTP as transport protocol')
-parser.add_argument('--http-path', default='',
-        help='HTTP path to send RPC calls to (default is /rpc)')
-
-parser.add_argument('-t', '--tls', default=False, action='store_true',
-        help='Use TLS authentication and encryption on the RPC connection')
-parser.add_argument('--check-hostname', default=False, action='store_true',
-        help='Check server hostname against its TLS certificate')
-parser.add_argument('-C', '--ca', default='',
-        help='Certificate Authority to check the server certificate against')
-parser.add_argument('-k', '--key', default='',
-        help='Key for client authentication')
-parser.add_argument('-c', '--cert', default='',
-        help='Certificate for client authentication')
-
-# make the PORT argument optional if HOST is a UNIX domain socket
-pos = -1
-for i, elem in enumerate(sys.argv):
-    if elem.startswith('unix://'):
-        pos = i
-        break
-
-if pos > -1:
-    sys.argv.insert(pos + 1, '0')
+parser = reflectrpc.cmdline.build_cmdline_parser("Interactive shell to access JSON-RPC services (part of the ReflectRPC project)")
 
 args = parser.parse_args()
+client = reflectrpc.cmdline.connect_client(args)
 
 try:
-    shell = ReflectRpcShell(args.host, args.port)
-
-    if args.http:
-        if args.http_path:
-            shell.enable_http(args.http_path)
-        else:
-            shell.enable_http()
-
-    if args.tls:
-        ca = args.ca
-        shell.enable_tls(ca, args.check_hostname)
-
-    if args.cert:
-        if not args.key:
-            print("--cert also requires --key\n")
-            parser.print_help()
-            sys.exit(1)
-
-        if not args.ca:
-            print("Client auth requires --ca\n")
-            parser.print_help()
-            sys.exit(1)
-
-    if args.key:
-        if not args.cert:
-            print("--key also requires --cert\n")
-            parser.print_help()
-            sys.exit(1)
-
-        if not args.ca:
-            print("Client auth requires --ca\n")
-            parser.print_help()
-            sys.exit(1)
-
-        shell.enable_client_auth(args.cert, args.key)
+    shell = ReflectRpcShell(client)
 
     shell.connect()
     shell.cmdloop()

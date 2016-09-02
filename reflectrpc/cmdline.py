@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 from builtins import bytes, dict, list, int, float, str
 
 import argparse
+import getpass
 import sys
 
 import reflectrpc
@@ -29,6 +30,8 @@ def build_cmdline_parser(description):
             help='Use HTTP as transport protocol')
     parser.add_argument('--http-path', default='',
             help='HTTP path to send RPC calls to (default is /rpc)')
+    parser.add_argument('--http-basic-user', default='',
+            help='Username for HTTP basic auth (password will be requested on the terminal)')
 
     parser.add_argument('-t', '--tls', default=False, action='store_true',
             help='Use TLS authentication and encryption on the RPC connection')
@@ -66,13 +69,36 @@ def connect_client(args):
     client = RpcClient(args.host, args.port)
 
     if args.http:
-        client.enable_http(args.http_path)
+        if args.http_path:
+            client.enable_http(args.http_path)
+        else:
+            client.enable_http()
 
     if args.tls:
         client.enable_tls(args.ca, args.check_hostname)
 
-    if args.cert and args.key:
-        args.client.enable_client_auth(args.cert, args.key)
+    if args.cert or args.key:
+        if not args.key:
+            print("--cert also requires --key\n")
+            parser.print_help()
+            sys.exit(1)
+
+        if not args.cert:
+            print("--key also requires --cert\n")
+            parser.print_help()
+            sys.exit(1)
+
+        if not args.ca:
+            print("Client auth requires --ca\n")
+            parser.print_help()
+            sys.exit(1)
+
+    if args.http_basic_user:
+        sys.stdout.write('Password: ')
+        password = getpass.getpass()
+        client.enable_http_basic_auth(args.http_basic_user, password)
+
+        client.enable_client_auth(args.cert, args.key)
 
     return client
 
