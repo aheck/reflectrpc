@@ -307,5 +307,97 @@ class RpcShTests(unittest.TestCase):
             child.kill(signal.SIGTERM)
             server.stop()
 
+    def test_rpcsh_expect_tls(self):
+        server = ServerRunner('../examples/servertls.py', 5500)
+        server.run()
+
+        try:
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500 --tls' % (python))
+
+            child.expect('ReflectRPC Shell\r\n')
+            child.expect('================\r\n\r\n')
+            child.expect("Type 'help' for available commands\r\n\r\n")
+            child.expect('RPC server: localhost:5500\r\n\r\n')
+            child.expect('Self-description of the Service:\r\n')
+            child.expect('================================\r\n')
+            child.expect('Example RPC Service \(1.0\)\r\n')
+            child.expect('This is an example service for ReflectRPC\r\n')
+            child.expect('\(rpc\) ')
+
+            child.sendline('list')
+            child.expect('echo\(message\)\r\n')
+            child.expect('add\(a, b\)\r\n')
+            child.expect('sub\(a, b\)\r\n')
+            child.expect('mul\(a, b\)\r\n')
+            child.expect('div\(a, b\)\r\n')
+            child.expect('enum_echo\(phone_type\)\r\n')
+            child.expect('hash_echo\(address\)\r\n')
+            child.expect('notify\(value\)\r\n')
+            child.expect('is_authenticated\(\)\r\n')
+            child.expect('get_username\(\)\r\n')
+            child.expect('echo_ints\(ints\)\r\n')
+
+            child.sendline('exec echo "Hello Server"')
+            child.expect('Server replied: "Hello Server"\r\n')
+
+            child.sendline('exec add 5 6')
+            child.expect('Server replied: 11\r\n')
+
+            child.sendline('exec is_authenticated')
+            child.expect('Server replied: false\r\n')
+
+            child.sendline('exec get_username')
+            child.expect('Server replied: null\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+            server.stop()
+
+    def test_rpcsh_expect_tls_client_auth(self):
+        server = ServerRunner('../examples/servertls_clientauth.py', 5500)
+        server.run()
+
+        try:
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500 --tls --ca ../examples/certs/rootCA.crt --key ../examples/certs/client.key --cert ../examples/certs/client.crt' % (python))
+
+            child.expect('ReflectRPC Shell\r\n')
+            child.expect('================\r\n\r\n')
+            child.expect("Type 'help' for available commands\r\n\r\n")
+            child.expect('RPC server: localhost:5500\r\n\r\n')
+            child.expect('Self-description of the Service:\r\n')
+            child.expect('================================\r\n')
+            child.expect('Example RPC Service \(1.0\)\r\n')
+            child.expect('This is an example service for ReflectRPC\r\n')
+            child.expect('\(rpc\) ')
+
+            child.sendline('list')
+            child.expect('echo\(message\)\r\n')
+            child.expect('add\(a, b\)\r\n')
+            child.expect('sub\(a, b\)\r\n')
+            child.expect('mul\(a, b\)\r\n')
+            child.expect('div\(a, b\)\r\n')
+            child.expect('enum_echo\(phone_type\)\r\n')
+            child.expect('hash_echo\(address\)\r\n')
+            child.expect('notify\(value\)\r\n')
+            child.expect('is_authenticated\(\)\r\n')
+            child.expect('get_username\(\)\r\n')
+            child.expect('echo_ints\(ints\)\r\n')
+
+            child.sendline('exec echo "Hello Server"')
+            child.expect('Server replied: "Hello Server"\r\n')
+
+            child.sendline('exec add 5 6')
+            child.expect('Server replied: 11\r\n')
+
+            child.sendline('exec is_authenticated')
+            child.expect('Server replied: true\r\n')
+
+            child.sendline('exec get_username')
+            child.expect('Server replied: "example-username"\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+            server.stop()
+
 if __name__ == '__main__':
     unittest.main()

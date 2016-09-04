@@ -61,7 +61,7 @@ def connect_client(args):
     Create and connect a RpcClient object based on parsed command-line args
 
     Args:
-        args (argparse.Namespace): 
+        args (argparse.Namespace): Parsed command-line args
 
     Returns:
         reflectrpc.RpcClient: Connected RpcClient client
@@ -93,12 +93,12 @@ def connect_client(args):
             parser.print_help()
             sys.exit(1)
 
+        client.enable_client_auth(args.cert, args.key)
+
     if args.http_basic_user:
         sys.stdout.write('Password: ')
         password = getpass.getpass()
         client.enable_http_basic_auth(args.http_basic_user, password)
-
-        client.enable_client_auth(args.cert, args.key)
 
     return client
 
