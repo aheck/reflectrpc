@@ -405,7 +405,7 @@ class RpcShTests(unittest.TestCase):
             python = sys.executable
             child = pexpect.spawn('%s ../rpcsh localhost 5500' % (python))
 
-            child.expect('NetworkError: \[Errno 61\] Connection refused\r\n')
+            child.expect('NetworkError: \[Errno \d+\] Connection refused\r\n')
             child.expect('\r\n')
             child.expect('Failed to connect to localhost on TCP port 5500\r\n')
         finally:
