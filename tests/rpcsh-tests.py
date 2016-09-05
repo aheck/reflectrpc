@@ -121,10 +121,10 @@ class RpcShTests(unittest.TestCase):
         self.assertEqual(result, ['CPU', 'CPUInfo'])
 
     def test_rpcsh_expect_simple(self):
-        server = ServerRunner('../examples/server.py', 5500)
-        server.run()
-
         try:
+            server = ServerRunner('../examples/server.py', 5500)
+            server.run()
+
             python = sys.executable
             child = pexpect.spawn('%s ../rpcsh localhost 5500' % (python))
 
@@ -167,11 +167,11 @@ class RpcShTests(unittest.TestCase):
             server.stop()
 
     def test_rpcsh_expect_unix_socket(self):
-        server = ServerRunner('../examples/serverunixsocket.py',
-                '/tmp/reflectrpc.sock')
-        server.run()
-
         try:
+            server = ServerRunner('../examples/serverunixsocket.py',
+                    '/tmp/reflectrpc.sock')
+            server.run()
+
             python = sys.executable
             child = pexpect.spawn('%s ../rpcsh unix:///tmp/reflectrpc.sock' % (python))
 
@@ -214,10 +214,10 @@ class RpcShTests(unittest.TestCase):
             server.stop()
 
     def test_rpcsh_expect_http(self):
-        server = ServerRunner('../examples/serverhttp.py', 5500)
-        server.run()
-
         try:
+            server = ServerRunner('../examples/serverhttp.py', 5500)
+            server.run()
+
             python = sys.executable
             child = pexpect.spawn('%s ../rpcsh localhost 5500 --http' % (python))
 
@@ -260,10 +260,10 @@ class RpcShTests(unittest.TestCase):
             server.stop()
 
     def test_rpcsh_expect_http_basic_auth(self):
-        server = ServerRunner('../examples/serverhttp.py', 5500)
-        server.run()
-
         try:
+            server = ServerRunner('../examples/serverhttp.py', 5500)
+            server.run()
+
             python = sys.executable
             child = pexpect.spawn('%s ../rpcsh localhost 5500 --http --http-basic-user testuser' % (python))
             child.expect('Password: ')
@@ -308,10 +308,10 @@ class RpcShTests(unittest.TestCase):
             server.stop()
 
     def test_rpcsh_expect_tls(self):
-        server = ServerRunner('../examples/servertls.py', 5500)
-        server.run()
-
         try:
+            server = ServerRunner('../examples/servertls.py', 5500)
+            server.run()
+
             python = sys.executable
             child = pexpect.spawn('%s ../rpcsh localhost 5500 --tls' % (python))
 
@@ -354,10 +354,10 @@ class RpcShTests(unittest.TestCase):
             server.stop()
 
     def test_rpcsh_expect_tls_client_auth(self):
-        server = ServerRunner('../examples/servertls_clientauth.py', 5500)
-        server.run()
-
         try:
+            server = ServerRunner('../examples/servertls_clientauth.py', 5500)
+            server.run()
+
             python = sys.executable
             child = pexpect.spawn('%s ../rpcsh localhost 5500 --tls --ca ../examples/certs/rootCA.crt --key ../examples/certs/client.key --cert ../examples/certs/client.crt' % (python))
 
@@ -395,6 +395,63 @@ class RpcShTests(unittest.TestCase):
 
             child.sendline('exec get_username')
             child.expect('Server replied: "example-username"\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+            server.stop()
+
+    def test_rpcsh_expect_connection_fails(self):
+        # connect although no server is running
+        try:
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500' % (python))
+
+            child.expect('NetworkError: \[Errno 61\] Connection refused\r\n')
+            child.expect('\r\n')
+            child.expect('Failed to connect to localhost on TCP port 5500\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+
+        # connect to a TLS server without enabling TLS
+        try:
+            server = ServerRunner('../examples/servertls.py', 5500)
+            server.run()
+
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500' % (python))
+
+            child.expect('NetworkError: Non-JSON content received\r\n')
+            child.expect('\r\n')
+            child.expect('Failed to connect to localhost on TCP port 5500\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+            server.stop()
+
+        # connect to a Non-TLS server with enabled TLS
+        try:
+            server = ServerRunner('../examples/server.py', 5500)
+            server.run()
+
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500 --tls' % (python))
+
+            child.expect('NetworkError: EOF occurred in violation of protocol \(_ssl.c:\d+\)\r\n')
+            child.expect('\r\n')
+            child.expect('Failed to connect to localhost on TCP port 5500\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+            server.stop()
+
+        # connect to a TLS server but fail the hostname check
+        try:
+            server = ServerRunner('../examples/servertls.py', 5500)
+            server.run()
+
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500 --tls --ca ../examples/certs/rootCA.crt --check-hostname' % (python))
+
+            child.expect("NetworkError: TLSHostnameError: Host name 'localhost' doesn't match certificate host 'reflectrpc'\r\n")
+            child.expect('\r\n')
+            child.expect('Failed to connect to localhost on TCP port 5500\r\n')
         finally:
             child.kill(signal.SIGTERM)
             server.stop()

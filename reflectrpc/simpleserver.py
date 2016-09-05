@@ -63,6 +63,9 @@ class SimpleJsonRpcServer(object):
                 self.__handle_connection(conn)
             except ConnectionResetError:
                 pass
+            except UnicodeDecodeError as e:
+                print(e)
+                conn.close()
 
     def __handle_connection(self, conn):
         """
