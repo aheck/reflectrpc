@@ -56,11 +56,12 @@ def build_cmdline_parser(description):
 
     return parser
 
-def connect_client(args):
+def connect_client(parser, args):
     """
-    Create and connect a RpcClient object based on parsed command-line args
+    Create and connect an RpcClient object based on parsed command-line args
 
     Args:
+        parser (argparse.Parser): Parser (only used for printing help in case of error)
         args (argparse.Namespace): Parsed command-line args
 
     Returns:
@@ -79,18 +80,18 @@ def connect_client(args):
 
     if args.cert or args.key:
         if not args.key:
-            print("--cert also requires --key\n")
             parser.print_help()
+            print("--cert also requires --key\n")
             sys.exit(1)
 
         if not args.cert:
-            print("--key also requires --cert\n")
             parser.print_help()
+            print("--key also requires --cert\n")
             sys.exit(1)
 
         if not args.ca:
-            print("Client auth requires --ca\n")
             parser.print_help()
+            print("Client auth requires --ca\n")
             sys.exit(1)
 
         client.enable_client_auth(args.cert, args.key)

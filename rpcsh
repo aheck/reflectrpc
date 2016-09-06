@@ -11,7 +11,7 @@ from reflectrpc.rpcsh import ReflectRpcShell
 parser = reflectrpc.cmdline.build_cmdline_parser("Interactive shell to access JSON-RPC services (part of the ReflectRPC project)")
 
 args = parser.parse_args()
-client = reflectrpc.cmdline.connect_client(args)
+client = reflectrpc.cmdline.connect_client(parser, args)
 
 try:
     shell = ReflectRpcShell(client)

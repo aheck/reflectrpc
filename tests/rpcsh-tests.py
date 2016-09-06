@@ -456,5 +456,42 @@ class RpcShTests(unittest.TestCase):
             child.kill(signal.SIGTERM)
             server.stop()
 
+    def test_rpcsh_expect_wrong_arguments(self):
+        # check what happens when rpcsh is called without parameters
+        try:
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh' % (python))
+
+            child.expect('\r\n(rpcsh: error: too few arguments|rpcsh: error: the following arguments are required: HOST, PORT)\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+
+        # check that --cert doesn't work without --key
+        try:
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500 --tls --ca ../examples/certs/rootCA.crt --cert ../examples/certs/rootCA.crt' % (python))
+
+            child.expect('\r\n--cert also requires --key\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+
+        # check that --key doesn't work without --cert
+        try:
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500 --tls --ca ../examples/certs/rootCA.crt --key ../examples/certs/client.key' % (python))
+
+            child.expect('\r\n--key also requires --cert\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+
+        # check that --cert and --key don't work without --ca
+        try:
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500 --tls --cert ../examples/certs/rootCA.crt --key ../examples/certs/client.key' % (python))
+
+            child.expect('\r\nClient auth requires --ca\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+
 if __name__ == '__main__':
     unittest.main()
