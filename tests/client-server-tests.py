@@ -275,7 +275,8 @@ class ClientServerTests(unittest.TestCase):
             with self.assertRaises(HttpException) as cm:
                 client.rpc_call('is_authenticated')
 
-            self.assertEqual(str(cm.exception), "Expected status code '200' but got '401'")
+            self.assertEqual(cm.exception.message, "Expected status code '200' but got '401'")
+            self.assertEqual(cm.exception.status, '401')
         finally:
             client.close_connection()
             server.stop()
@@ -292,7 +293,8 @@ class ClientServerTests(unittest.TestCase):
             with self.assertRaises(HttpException) as cm:
                 client.rpc_call('is_authenticated')
 
-            self.assertEqual(str(cm.exception), "Expected status code '200' but got '401'")
+            self.assertEqual(cm.exception.message, "Expected status code '200' but got '401'")
+            self.assertEqual(cm.exception.status, '401')
         finally:
             client.close_connection()
             server.stop()
@@ -309,7 +311,8 @@ class ClientServerTests(unittest.TestCase):
             with self.assertRaises(HttpException) as cm:
                 client.rpc_call('is_authenticated')
 
-            self.assertEqual(str(cm.exception), "Expected status code '200' but got '401'")
+            self.assertEqual(cm.exception.message, "Expected status code '200' but got '401'")
+            self.assertEqual(cm.exception.status, '401')
         finally:
             client.close_connection()
             server.stop()

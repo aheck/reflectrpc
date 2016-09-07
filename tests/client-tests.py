@@ -49,7 +49,7 @@ class ClientTests(unittest.TestCase):
             with self.assertRaises(HttpException) as cm:
                 client.rpc_call('echo', 'Hello Server')
 
-            self.assertEqual(str(cm.exception), "Received invalid HTTP response: Couldn't find a HTTP header")
+            self.assertEqual(cm.exception.message, "Received invalid HTTP response: Couldn't find a HTTP header")
             server.stop()
         finally:
             client.close_connection()
