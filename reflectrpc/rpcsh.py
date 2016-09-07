@@ -116,6 +116,12 @@ class ReflectRpcShell(Cmd):
             print(e, file=sys.stderr)
             print('', file=sys.stderr)
             self.connection_failed_error(True)
+        except reflectrpc.client.HttpException as e:
+            if e.status == '401':
+                print('Authentication failed\n', file=sys.stderr)
+                self.connection_failed_error(True)
+
+            raise e
 
         self.prompt = '(rpc) '
         if self.client.host.startswith('unix://'):

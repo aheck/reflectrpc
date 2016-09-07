@@ -97,7 +97,6 @@ def connect_client(parser, args):
         client.enable_client_auth(args.cert, args.key)
 
     if args.http_basic_user:
-        sys.stdout.write('Password: ')
         password = getpass.getpass()
         client.enable_http_basic_auth(args.http_basic_user, password)
 

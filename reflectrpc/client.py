@@ -42,7 +42,9 @@ class TLSHostnameError(Exception):
         return "TLSHostnameError: Host name '%s' doesn't match certificate host '%s'" % (self.hostname, self.cert_hostname)
 
 class HttpException(Exception):
-    pass
+    def __init__(self, message, status = '0'):
+        self.message = message
+        self.status = status
 
 class RpcError(Exception):
     """
@@ -330,7 +332,8 @@ class RpcClient(object):
             raise HttpException("Unexpected HTTP version: '%s'" % (fields[0]))
 
         if fields[1] != '200':
-            raise HttpException("Expected status code '200' but got '%s'" % (fields[1]))
+            raise HttpException("Expected status code '200' but got '%s'" %
+                    (fields[1]), fields[1])
 
         content_length = 0
         content_type = ''

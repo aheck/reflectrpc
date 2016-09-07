@@ -261,7 +261,7 @@ class RpcShTests(unittest.TestCase):
 
     def test_rpcsh_expect_http_basic_auth(self):
         try:
-            server = ServerRunner('../examples/serverhttp.py', 5500)
+            server = ServerRunner('../examples/serverhttp_basic_auth.py', 5500)
             server.run()
 
             python = sys.executable
@@ -303,6 +303,22 @@ class RpcShTests(unittest.TestCase):
 
             child.sendline('exec get_username')
             child.expect('Server replied: "testuser"\r\n')
+        finally:
+            child.kill(signal.SIGTERM)
+            server.stop()
+
+    def test_rpcsh_expect_http_basic_auth_fail(self):
+        try:
+            server = ServerRunner('../examples/serverhttp_basic_auth.py', 5500)
+            server.run()
+
+            python = sys.executable
+            child = pexpect.spawn('%s ../rpcsh localhost 5500 --http --http-basic-user testuser' % (python))
+            child.expect('Password: ')
+            child.send('wrongpassword\r\n')
+
+            child.expect('Authentication failed\r\n\r\n')
+            child.expect('Failed to connect to localhost on TCP port 5500\r\n')
         finally:
             child.kill(signal.SIGTERM)
             server.stop()
