@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 from builtins import bytes, dict, list, int, float, str
 
 import os
-import signal
 import sys
 import unittest
 
@@ -163,7 +162,7 @@ class RpcShTests(unittest.TestCase):
             child.sendline('exec get_username')
             child.expect('Server replied: null\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
     def test_rpcsh_expect_unix_socket(self):
@@ -210,7 +209,7 @@ class RpcShTests(unittest.TestCase):
             child.sendline('exec get_username')
             child.expect('Server replied: null\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
     def test_rpcsh_expect_http(self):
@@ -256,7 +255,7 @@ class RpcShTests(unittest.TestCase):
             child.sendline('exec get_username')
             child.expect('Server replied: null\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
     def test_rpcsh_expect_http_basic_auth(self):
@@ -267,7 +266,7 @@ class RpcShTests(unittest.TestCase):
             python = sys.executable
             child = pexpect.spawn('%s ../rpcsh localhost 5500 --http --http-basic-user testuser' % (python))
             child.expect('Password: ')
-            child.send('123456\r\n')
+            child.sendline('123456')
 
             child.expect('ReflectRPC Shell\r\n')
             child.expect('================\r\n\r\n')
@@ -304,7 +303,7 @@ class RpcShTests(unittest.TestCase):
             child.sendline('exec get_username')
             child.expect('Server replied: "testuser"\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
     def test_rpcsh_expect_http_basic_auth_fail(self):
@@ -320,7 +319,7 @@ class RpcShTests(unittest.TestCase):
             child.expect('Authentication failed\r\n\r\n')
             child.expect('Failed to connect to localhost on TCP port 5500\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
     def test_rpcsh_expect_tls(self):
@@ -366,7 +365,7 @@ class RpcShTests(unittest.TestCase):
             child.sendline('exec get_username')
             child.expect('Server replied: null\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
     def test_rpcsh_expect_tls_client_auth(self):
@@ -412,7 +411,7 @@ class RpcShTests(unittest.TestCase):
             child.sendline('exec get_username')
             child.expect('Server replied: "example-username"\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
     def test_rpcsh_expect_connection_fails(self):
@@ -425,7 +424,7 @@ class RpcShTests(unittest.TestCase):
             child.expect('\r\n')
             child.expect('Failed to connect to localhost on TCP port 5500\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
 
         # connect to a TLS server without enabling TLS
         try:
@@ -439,7 +438,7 @@ class RpcShTests(unittest.TestCase):
             child.expect('\r\n')
             child.expect('Failed to connect to localhost on TCP port 5500\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
         # connect to a Non-TLS server with enabled TLS
@@ -454,7 +453,7 @@ class RpcShTests(unittest.TestCase):
             child.expect('\r\n')
             child.expect('Failed to connect to localhost on TCP port 5500\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
         # connect to a TLS server but fail the hostname check
@@ -469,7 +468,7 @@ class RpcShTests(unittest.TestCase):
             child.expect('\r\n')
             child.expect('Failed to connect to localhost on TCP port 5500\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
             server.stop()
 
     def test_rpcsh_expect_wrong_arguments(self):
@@ -480,7 +479,7 @@ class RpcShTests(unittest.TestCase):
 
             child.expect('\r\n(rpcsh: error: too few arguments|rpcsh: error: the following arguments are required: HOST, PORT)\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
 
         # check that --cert doesn't work without --key
         try:
@@ -489,7 +488,7 @@ class RpcShTests(unittest.TestCase):
 
             child.expect('\r\n--cert also requires --key\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
 
         # check that --key doesn't work without --cert
         try:
@@ -498,7 +497,7 @@ class RpcShTests(unittest.TestCase):
 
             child.expect('\r\n--key also requires --cert\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
 
         # check that --cert and --key don't work without --ca
         try:
@@ -507,7 +506,7 @@ class RpcShTests(unittest.TestCase):
 
             child.expect('\r\nClient auth requires --ca\r\n')
         finally:
-            child.kill(signal.SIGTERM)
+            child.close(True)
 
 if __name__ == '__main__':
     unittest.main()
