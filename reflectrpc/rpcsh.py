@@ -9,6 +9,7 @@ from cmd import Cmd
 from reflectrpc.client import RpcClient
 from reflectrpc.client import RpcError
 import reflectrpc
+import reflectrpc.cmdline
 
 def print_types(types):
     for t in types:
@@ -115,11 +116,13 @@ class ReflectRpcShell(Cmd):
         except reflectrpc.client.NetworkError as e:
             print(e, file=sys.stderr)
             print('', file=sys.stderr)
-            self.connection_failed_error(True)
+            reflectrpc.cmdline.connection_failed_error(self.client.host,
+                    self.client.port, True)
         except reflectrpc.client.HttpException as e:
             if e.status == '401':
                 print('Authentication failed\n', file=sys.stderr)
-                self.connection_failed_error(True)
+                reflectrpc.cmdline.connection_failed_error(self.client.host,
+                        self.client.port, True)
 
             raise e
 
@@ -158,15 +161,6 @@ class ReflectRpcShell(Cmd):
             self.custom_types = self.client.rpc_call('__describe_custom_types')
         except RpcError:
             pass
-
-    def connection_failed_error(self, exit=False):
-        if self.client.host.startswith('unix://'):
-            print("Failed to connect to %s" % (self.client.host))
-        else:
-            print("Failed to connect to %s on TCP port %d" % (self.client.host, self.client.port))
-
-        if exit:
-            sys.exit(1)
 
     def complete_doc(self, text, line, start_index, end_index):
         return self.function_completion(text, line)

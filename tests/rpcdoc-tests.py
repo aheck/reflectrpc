@@ -19,7 +19,7 @@ sys.path.append('..')
 from reflectrpc.testing import ServerRunner
 
 class RpcDocTests(unittest.TestCase):
-    def test_basic_operation(self):
+    def test_rpcdoc_basic_operation(self):
         try:
             server = ServerRunner('../examples/server.py', 5500)
             server.run()
@@ -42,7 +42,7 @@ class RpcDocTests(unittest.TestCase):
             server.stop()
             shutil.rmtree(dirname)
 
-    def test_unix_socket(self):
+    def test_rpcdoc_unix_socket(self):
         try:
             server = ServerRunner('../examples/serverunixsocket.py', '/tmp/reflectrpc.sock')
             server.run()
@@ -65,7 +65,7 @@ class RpcDocTests(unittest.TestCase):
             server.stop()
             shutil.rmtree(dirname)
 
-    def test_http(self):
+    def test_rpcdoc_http(self):
         try:
             server = ServerRunner('../examples/serverhttp.py', 5500)
             server.run()
@@ -88,7 +88,7 @@ class RpcDocTests(unittest.TestCase):
             server.stop()
             shutil.rmtree(dirname)
 
-    def test_http_basic_auth(self):
+    def test_rpcdoc_http_basic_auth(self):
         try:
             server = ServerRunner('../examples/serverhttp.py', 5500)
             server.run()
@@ -115,7 +115,7 @@ class RpcDocTests(unittest.TestCase):
             server.stop()
             shutil.rmtree(dirname)
 
-    def test_tls(self):
+    def test_rpcdoc_tls(self):
         try:
             server = ServerRunner('../examples/servertls.py', 5500)
             server.run()
@@ -138,7 +138,7 @@ class RpcDocTests(unittest.TestCase):
             server.stop()
             shutil.rmtree(dirname)
 
-    def test_tls_client_auth(self):
+    def test_rpcdoc_tls_client_auth(self):
         try:
             server = ServerRunner('../examples/servertls_clientauth.py', 5500)
             server.run()

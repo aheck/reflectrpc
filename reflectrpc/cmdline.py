@@ -127,6 +127,23 @@ def fetch_service_metainfo(client):
             print("Call to '__describe_custom_types' failed", file=sys.stderr)
     except reflectrpc.client.NetworkError as e:
         print(e, file=sys.stderr)
+        print('', file=sys.stderr)
+        connection_failed_error(client.host,
+                client.port, True)
         sys.exit(1)
+    except reflectrpc.client.HttpException as e:
+        if e.status == '401':
+            print('Authentication failed\n', file=sys.stderr)
+            connection_failed_error(client.host,
+                    client.port, True)
 
     return service_description, functions, custom_types
+
+def connection_failed_error(host, port, exit=False):
+    if host.startswith('unix://'):
+        print("Failed to connect to %s" % (host))
+    else:
+        print("Failed to connect to %s on TCP port %d" % (host, port))
+
+    if exit:
+        sys.exit(1)
