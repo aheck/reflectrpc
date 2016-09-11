@@ -603,11 +603,12 @@ class RpcProcessorTests(unittest.TestCase):
         self.assertEqual(reply['result'], None)
 
         reply = rpc.process_request('{"method": "echo_hash", "params": [{"somestr": "mystr", "type2": {"someint": 5}}], "id": 2}')
-        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_hash: Named hash parameter 'type2' of type 'Type2': Missing field 'type3'"})
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message':
+            "echo_hash: Named hash parameter 'value.type2' of type 'Type2': Missing field 'type3'"})
         self.assertEqual(reply['result'], None)
 
         reply = rpc.process_request('{"method": "echo_hash", "params": [{"somestr": "mystr", "type2": {"someint": 5, "type3": {"somebool": 8}}}], "id": 3}')
-        self.assertEqual(reply['error'], {'message': "echo_hash: Named hash parameter 'type3' of type 'Type3' has invalid field 'somebool': Expected bool but got int", 'name': 'TypeError'})
+        self.assertEqual(reply['error'], {'message': "echo_hash: Named hash parameter 'value.type2.type3' of type 'Type3' has invalid field 'somebool': Expected bool but got int", 'name': 'TypeError'})
         self.assertEqual(reply['result'], None)
 
         reply = rpc.process_request('{"method": "echo_hash", "params": [{"somestr": "mystr", "type2": {"someint": 5, "type3": {"somebool": true}}}], "id": 4}')
@@ -640,7 +641,7 @@ class RpcProcessorTests(unittest.TestCase):
 
         reply = rpc.process_request('{"method": "echo_array", "params": [[1, 2, "invalid string", 9]], "id": 3}')
         self.assertEqual(reply['result'], None)
-        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_array: Expected value of type 'int' for parameter '[2]' but got value of type 'string'"})
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_array: Expected value of type 'int' for parameter 'numbers[2]' but got value of type 'string'"})
 
     def test_typed_arrays_with_custom_types(self):
         rpc = RpcProcessor()
@@ -657,11 +658,11 @@ class RpcProcessorTests(unittest.TestCase):
         rpc.add_function(func)
 
         reply = rpc.process_request('{"method": "echo_array", "params": [[5, 6, 7]], "id": 1}')
-        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_array: Named hash parameter '[0]' of type 'Example' requires a hash value but got 'int'"})
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_array: Named hash parameter 'examples[0]' of type 'Example' requires a hash value but got 'int'"})
         self.assertEqual(reply['result'], None)
 
         reply = rpc.process_request('{"method": "echo_array", "params": [[{"somestr": "str", "someint": 5}, {"somestr": "str", "someint": true}]], "id": 2}')
-        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_array: Named hash parameter '[1]' of type 'Example' has invalid field 'someint': Expected int but got bool"})
+        self.assertEqual(reply['error'], {'name': 'TypeError', 'message': "echo_array: Named hash parameter 'examples[1]' of type 'Example' has invalid field 'someint': Expected int but got bool"})
         self.assertEqual(reply['result'], None)
 
         reply = rpc.process_request('{"method": "echo_array", "params": [[{"somestr": "str1", "someint": 5}, {"somestr": "str2", "someint": 6}]], "id": 3}')

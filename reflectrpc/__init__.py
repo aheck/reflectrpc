@@ -756,7 +756,7 @@ class RpcProcessor(object):
         for p in func.params:
             value = params[i]
             try:
-                self.check_param_type(func, p, value)
+                self.check_param_type(func, p, value, '')
             except InvalidEnumValueError as e:
                 raise JsonRpcTypeError("%s: '%s' is not a valid value for parameter '%s' of enum type '%s'"
                         % (func.name, e.value, e.name, e.expected_type))
@@ -771,18 +771,20 @@ class RpcProcessor(object):
 
             i += 1
 
-    def check_param_type(self, func, param, value):
+    def check_param_type(self, func, param, value, path):
         """
         Check the type of a single parameter
 
         Args:
-            name (string): Name of the parameter
-            declared_type (string): Type that we expect from the caller
             value (any): Actual value that was passed by the caller
+            path (str): Path to the variable in nested structures
         """
         real_type = type(value).__name__
         name = param['name']
         declared_type = param['type']
+
+        if not path:
+            path = name
 
         # workaround for Python 2.7
         if real_type == 'unicode':
@@ -795,57 +797,64 @@ class RpcProcessor(object):
             if type(typeobj).__name__ == 'JsonEnumType':
                 try:
                     if not typeobj.validate(value):
-                        raise InvalidEnumValueError(name, declared_type, str(value))
+                        raise InvalidEnumValueError(path, declared_type, str(value))
                 except ValueError:
-                    raise InvalidEnumTypeError(name, self.py2json[real_type])
+                    raise InvalidEnumTypeError(path, self.py2json[real_type])
             elif type(typeobj).__name__ == 'JsonHashType':
                 if self.py2json[real_type] != 'hash':
-                    raise InvalidNamedHashError(name, declared_type, self.py2json[real_type])
+                    raise InvalidNamedHashError(path, declared_type, self.py2json[real_type])
 
                 # validate named hashes if named has validation is enabled
                 if self.named_hash_validation and self.__is_named_hash_type(declared_type):
-                    self.check_named_hash(func, param, value)
+                    self.check_named_hash(func, param, value, path)
         # typed array?
         elif declared_type.startswith('array<'):
             if real_type != 'list':
-                raise InvalidPrimitiveTypeError(name, declared_type, self.py2json[real_type])
+                raise InvalidPrimitiveTypeError(path, declared_type, self.py2json[real_type])
 
             array_type = declared_type[len('array<'):-1]
             i = 0
             for v in value:
                 p = {'name': '[%d]' % (i), 'type': array_type}
-                self.check_param_type(func, p, v)
+                self.check_param_type(func, p, v, path + p['name'])
                 i += 1
         # primitive type?
         elif real_type != self.json2py[declared_type]:
-            raise InvalidPrimitiveTypeError(name, declared_type, self.py2json[real_type])
+            raise InvalidPrimitiveTypeError(path, declared_type, self.py2json[real_type])
 
-    def check_named_hash(self, func, p, value):
+    def check_named_hash(self, func, param, value, path):
         """
         Check if a value for a named hash is valid
         """
-        named_hash = self.custom_types_dict[p['type']]
+        named_hash = self.custom_types_dict[param['type']]
+
+        name = param['name']
+        declared_type = param['type']
+
+        if not path:
+            path = name
 
         # check if a field is not defined in the named hash
         for fieldname in value:
             if fieldname not in named_hash.fieldnames:
-                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s': Unknown field '%s'" % (func.name, p['name'], p['type'], fieldname))
+                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s': Unknown field '%s'" % (func.name, path, declared_type, fieldname))
 
         for fieldname in named_hash.fieldnames:
             # check if all field names are present
             if fieldname not in value:
-                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s': Missing field '%s'" % (func.name, p['name'], p['type'], fieldname))
+                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s': Missing field '%s'" % (func.name, path, declared_type, fieldname))
 
             try:
-                self.check_param_type(func, named_hash.fields_dict[fieldname], value[fieldname])
+                self.check_param_type(func, named_hash.fields_dict[fieldname],
+                        value[fieldname], path + '.' + fieldname)
             except InvalidEnumValueError as e:
-                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': '%s' is not a valid value" % (func.name, p['name'], named_hash.name, fieldname, e.value))
+                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': '%s' is not a valid value" % (func.name, path, named_hash.name, fieldname, e.value))
             except InvalidEnumTypeError as e:
-                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': Value must be of type 'int' or 'string' but type was '%s'" % (func.name, p['name'], named_hash.name, fieldname, e.real_type))
+                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': Value must be of type 'int' or 'string' but type was '%s'" % (func.name, path, named_hash.name, fieldname, e.real_type))
             except InvalidNamedHashError as e:
                 raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'" % (func.name, e.name, e.expected_type, e.real_type))
             except InvalidPrimitiveTypeError as e:
-                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': Expected %s but got %s" % (func.name, p['name'], p['type'], fieldname, e.expected_type, e.real_type))
+                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': Expected %s but got %s" % (func.name, path, declared_type, fieldname, e.expected_type, e.real_type))
 
     def process_request(self, message, rpcinfo = None):
         """
