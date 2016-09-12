@@ -844,17 +844,8 @@ class RpcProcessor(object):
             if fieldname not in value:
                 raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s': Missing field '%s'" % (func.name, path, declared_type, fieldname))
 
-            try:
-                self.check_param_type(func, named_hash.fields_dict[fieldname],
-                        value[fieldname], path + '.' + fieldname)
-            except InvalidEnumValueError as e:
-                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': '%s' is not a valid value" % (func.name, path, named_hash.name, fieldname, e.value))
-            except InvalidEnumTypeError as e:
-                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': Value must be of type 'int' or 'string' but type was '%s'" % (func.name, path, named_hash.name, fieldname, e.real_type))
-            except InvalidNamedHashError as e:
-                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' requires a hash value but got '%s'" % (func.name, e.name, e.expected_type, e.real_type))
-            except InvalidPrimitiveTypeError as e:
-                raise JsonRpcTypeError("%s: Named hash parameter '%s' of type '%s' has invalid field '%s': Expected %s but got %s" % (func.name, path, declared_type, fieldname, e.expected_type, e.real_type))
+            self.check_param_type(func, named_hash.fields_dict[fieldname],
+                    value[fieldname], path + '.' + fieldname)
 
     def process_request(self, message, rpcinfo = None):
         """
