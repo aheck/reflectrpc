@@ -2,11 +2,13 @@
 Changelog
 *********
 
-0.7.6 (2016-)
+0.7.6 (2016-09-14)
 ==================
 
 - Support for typed arrays
 - Autocompletion of type and function names in rpcsh
+- Bugfixes for command-line programs
+- Autoreconnect in case of failing connections in command-line programs
 
 0.7.5 (2016-08-17)
 ==================
