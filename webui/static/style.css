@@ -64,3 +64,8 @@ table.connected_to td {
 div.result {
     white-space: pre;
 }
+
+div.error {
+    color: red;
+    text-width: bold;
+}

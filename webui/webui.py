@@ -7,7 +7,9 @@ from flask import Flask, Response, render_template, request, session
 sys.path.append('..')
 
 from reflectrpc.client import RpcClient
-from reflectrpc.cmdline import fetch_service_metainfo
+from reflectrpc.client import RpcError
+from reflectrpc.client import NetworkError
+from reflectrpc.client import HttpException
 
 app = Flask(__name__)
 
@@ -50,16 +52,40 @@ def index_page():
         session['username'] = username
         session['password'] = password
 
-        client = connect_client(host, port, http, username, password)
-
+        http_label = 'No'
         if http:
-            http = 'Yes'
-        else:
-            http = 'No'
+            http_label = 'Yes'
 
-        (service_description, functions, custom_types) = fetch_service_metainfo(client)
+        service_description = ''
+        functions = []
+        custom_types = []
 
-        client.close_connection()
+        try:
+            client = connect_client(host, port, http, username, password)
+
+            try:
+                service_description = client.rpc_call('__describe_service')
+            except RpcError:
+                print("Call to '__describe_service' failed", file=sys.stderr)
+
+            try:
+                functions = client.rpc_call('__describe_functions')
+            except RpcError:
+                print("Call to '__describe_functions' failed", file=sys.stderr)
+
+            try:
+                custom_types = client.rpc_call('__describe_custom_types')
+            except RpcError:
+                print("Call to '__describe_custom_types' failed", file=sys.stderr)
+        except NetworkError as e:
+            return render_template('login.html', error=str(e))
+        except HttpException as e:
+            if e.status == '401':
+                return render_template('login.html', error='Authentication failed')
+            else:
+                return render_template('login.html', error=str(e))
+        finally:
+            client.close_connection()
 
         for func in functions:
             func['name_with_params'] = func['name'] + '('
@@ -74,7 +100,7 @@ def index_page():
 
         return render_template('app.html', functions=functions,
                 service_description=service_description,
-                custom_types=custom_types, host=host, port=port, http=http)
+                custom_types=custom_types, host=host, port=port, http=http_label)
     else:
         return render_template('login.html')
 
@@ -90,11 +116,16 @@ def call_json_rpc():
     req_id += 1
     session['req_id'] = req_id
 
-    client = connect_client(session['host'], session['port'], session['http'],
-            session['username'], session['password'])
-    result = client.rpc_call_raw('{"method": "%s", "params": [%s], "id": %d}'
-            % (funcname, params, req_id))
-    client.close_connection()
+    client = None
+    result = None
+
+    try:
+        client = connect_client(session['host'], session['port'], session['http'],
+                session['username'], session['password'])
+        result = client.rpc_call_raw('{"method": "%s", "params": [%s], "id": %d}'
+                % (funcname, params, req_id))
+    finally:
+        client.close_connection()
 
     return Response(result, mimetype='application/json')
 
