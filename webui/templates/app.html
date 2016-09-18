@@ -8,13 +8,22 @@ $(document).ready(function() {
     });
 });
 
-function callJsonRpc(output, funcname, params) {
-    params = $('#' + params).val();
+function callJsonRpc(output, funcname, params_name) {
+    params = $(':input[name=' + params_name + '\\[\\]]');
+    params_list = '';
+
+    for (var i = 0; i < params.length; i++) {
+        if (i > 0) {
+            params_list += ', ';
+        }
+
+        params_list += params[i].value;
+    }
 
     postData = 'funcname=';
     postData += encodeURIComponent(funcname);
     postData += '&params=';
-    postData += encodeURIComponent(params);
+    postData += encodeURIComponent(params_list);
 
     $.ajax({
         url: "/call_jsonrpc",
@@ -56,11 +65,16 @@ Connected to:
 <div class="function">
 <p>{{func['description']}}</p>
 <h3>Params:</h3>
-<table>
+<table class="params">
 {% for param in func['params'] %}
 <tr>
   <td>{{param['name']}}</td>
   <td>{{param['type']}}</td>
+  {% if param['control'] == 'textarea' %}
+  <td><textarea name="params_{{func['name']}}[]" rows="10" cols="80"></textarea></td>
+  {% else %}
+  <td><input name="params_{{func['name']}}[]" type="text" size="30"/></td>
+  {% endif %}
   <td>{{param['description']}}</td>
 </tr>
 {% endfor %}
@@ -68,7 +82,6 @@ Connected to:
 <p>Returns: {{func['result_type']}} - {{func['result_desc']}}</p>
 
 <p>
-  <textarea id="params_{{func['name']}}" rows="10" cols="80"></textarea><br>
   <button onclick="javascript:callJsonRpc('result_{{func['name']}}', '{{func['name']}}', 'params_{{func['name']}}');">Execute</button><br>
   <div id="result_{{func['name']}}" class="result"></div>
 </p>

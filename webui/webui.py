@@ -6,6 +6,7 @@ from flask import Flask, Response, render_template, request, session
 
 sys.path.append('..')
 
+import reflectrpc
 from reflectrpc.client import RpcClient
 from reflectrpc.client import RpcError
 from reflectrpc.client import NetworkError
@@ -94,6 +95,12 @@ def index_page():
                 if not first:
                     func['name_with_params'] += ', '
                 func['name_with_params'] += param['name']
+
+                if param['type'].startswith('array') or param['type'] in ['base64', 'hash'] or param['type'][0].isupper():
+                    param['control'] = 'textarea'
+                else:
+                    param['control'] = 'lineedit'
+
                 first = False
 
             func['name_with_params'] += ')'

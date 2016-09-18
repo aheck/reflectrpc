@@ -69,3 +69,8 @@ div.error {
     color: red;
     text-width: bold;
 }
+
+table.params td {
+    vertical-align: top;
+    padding: 0.3em;
+}
