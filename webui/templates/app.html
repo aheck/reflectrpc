@@ -32,10 +32,12 @@ function callJsonRpc(output, funcname, params_name) {
         processData: false,
         contentType: 'application/x-www-form-urlencoded',
         success: function(result){
-            $('#' + output).text('Server replied: ' + JSON.stringify(result, null, 4))
+            $('#' + output).css('color', 'black');
+            $('#' + output).text('Server replied: ' + JSON.stringify(result, null, 4));
         },
         error: function(jqXHR, textStatus, err) {
-            $('#' + output).text('ERROR: ' + err)
+            $('#' + output).text('ERROR: ' + jqXHR.responseText);
+            $('#' + output).css('color', 'red');
         }
     });
 }

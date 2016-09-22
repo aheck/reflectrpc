@@ -131,6 +131,9 @@ def call_json_rpc():
                 session['username'], session['password'])
         result = client.rpc_call_raw('{"method": "%s", "params": [%s], "id": %d}'
                 % (funcname, params, req_id))
+    except NetworkError as e:
+        return Response("Failed to connect to JSON-RPC server",
+                status=500, mimetype='text/plain')
     finally:
         client.close_connection()
 
