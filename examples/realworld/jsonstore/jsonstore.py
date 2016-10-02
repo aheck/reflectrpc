@@ -6,13 +6,17 @@ from twisted.internet import reactor
 from twisted.python import log, util
 
 import json
+import pyparsing as pp
 import sys
 import uuid
 
 import reflectrpc
 from reflectrpc import RpcProcessor
 from reflectrpc import RpcFunction
+from reflectrpc import JsonRpcError
 from reflectrpc.twistedserver import TwistedJsonRpcServer
+
+from jsonstore import filter_exp_to_sql_where
 
 db_connections = {}
 
@@ -20,6 +24,17 @@ db_connections = {}
 # This JSON-RPC service implements a JSON object store that uses PostgreSQL and
 # its jsonb datatype as a storage backend.
 #
+
+class FilterExpressionParseError(JsonRpcError):
+    def __init__(self, msg):
+        """
+        Constructor
+
+        Args:
+            msg (str): Error message
+        """
+        self.msg = msg
+        self.name = 'FilterExpressionParseError'
 
 # Helper functions
 
@@ -69,10 +84,22 @@ def get_object_by_name(rpcinfo, obj_name):
 
     return d
 
-def find_objects(rpcinfo, obj_filter):
+def find_objects(rpcinfo, filter_exp):
     conn, d = get_db_connection()
 
-    d.addCallback(lambda _: conn.runQuery("SELECT uuid, obj_name, data, updated FROM jsonstore WHERE data->>%s=%s", (obj_filter['field'], obj_filter['value'])))
+    query = "SELECT uuid, obj_name, data, updated FROM jsonstore"
+    where_clause = ''
+    try:
+        where_clause = filter_exp_to_sql_where(filter_exp)
+    except pp.ParseException as e:
+        raise FilterExpressionParseError(str(e))
+
+    print(where_clause)
+    if where_clause:
+        query += ' WHERE ' + where_clause
+
+    d.addCallback(lambda _: conn.runQuery(query))
+
     def return_result(data):
         conn.close()
 
@@ -175,19 +202,11 @@ def delete_object_by_name(rpcinfo, name):
     return d
 
 
-# Declare custom types
-objFilter = reflectrpc.JsonHashType('ObjFilter', 'A filter comparing one JSON field for equality')
-objFilter.add_field('field', 'string', 'Name of the field to filter on')
-objFilter.add_field('value', 'string', 'Name of the value to filter for')
-
 # Create service object
 jsonrpc = RpcProcessor()
 jsonrpc.set_description("JSON Store Service",
         "JSON-RPC service for storing JSON objects in a PostgreSQL database",
         reflectrpc.version)
-
-# Register custom types
-jsonrpc.add_custom_type(objFilter)
 
 # Register functions
 get_object_func = RpcFunction(get_object, 'get_object', 'Gets a JSON object by its UUID',
@@ -202,7 +221,7 @@ get_object_by_name_func.require_rpcinfo()
 jsonrpc.add_function(get_object_by_name_func)
 
 find_objects_func = RpcFunction(find_objects, 'find_objects', 'Finds JSON objects which match a filter', 'array<hash>', 'List of matching JSON object')
-find_objects_func.add_param('ObjFilter', 'filter', 'Filter for the JSON objects to retrieve')
+find_objects_func.add_param('string', 'filter', 'Filter for the JSON objects to retrieve (e.g. "field1 = \'test\' AND score > 3")')
 find_objects_func.require_rpcinfo()
 jsonrpc.add_function(find_objects_func)
 
