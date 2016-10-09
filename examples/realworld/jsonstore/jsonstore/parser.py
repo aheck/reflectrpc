@@ -1,6 +1,15 @@
 import pyparsing as pp
 
+#
 # Parser for jsonstore filter expressions
+#
+# A filter expression looks something like this:
+#
+# field1 = 'test' AND (score > 3 OR score = 0)
+#
+
+
+# Helper functions to annotate the parse tree with extra information
 def setTypeFieldname(toks):
     toks['token_type'] = 'fieldname'
     return toks
@@ -10,6 +19,7 @@ def setTypeValue(toks):
     toks[0] = "'" + toks[0] + "'"
     return toks
 
+# The pyparsing grammar of the filter expression syntax
 lpar  = pp.Literal('(').suppress()
 rpar  = pp.Literal(')').suppress()
 fieldname = pp.Regex('[a-zA-Z_][a-zA-Z_0-9]*').setParseAction(setTypeFieldname)
@@ -25,6 +35,10 @@ expression << comparison + pp.ZeroOrMore(conjunction + expression)
 grammar = pp.Or([pp.LineStart() + pp.LineEnd(), pp.LineStart() + expression + pp.LineEnd()])
 
 def filter_exp_to_sql_where(filter_exp):
+    """
+    Parses a filter expression and returns a Postgres WHERE clause to fetch
+    the data from our JSONB column
+    """
     filter_exp = filter_exp.strip()
     parse_tree = grammar.parseString(filter_exp)
     if len(parse_tree) == 0:
@@ -33,6 +47,10 @@ def filter_exp_to_sql_where(filter_exp):
     return parse_tree_to_sql_where(parse_tree)
 
 def parse_tree_to_sql_where(parse_tree):
+    """
+    Walks a parse tree of a filter expression and generates a Postgres WHERE
+    clause from it
+    """
     def next_element():
         if len(parse_tree) > 0:
             return parse_tree.pop(0)
