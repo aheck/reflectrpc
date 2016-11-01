@@ -15,7 +15,9 @@ RUN apt-get update && apt-get install -y \
   python-pip \
   gcc \
   libssl-dev \
-  libssl1.0.0
+  libssl1.0.0 \
+  libffi-dev \
+  libffi6
 RUN pip install reflectrpc pexpect
 RUN mkdir /tmp/reflectrpc-test
 RUN cp `which rpcsh` /tmp/reflectrpc-test
